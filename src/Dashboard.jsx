@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SupportContact from "../components/SupportContact";
 
 export default function Dashboard({ user, userCampaigns = [], userDonations = [] }) {
   const [activeTab, setActiveTab] = useState('campaigns');
@@ -20,7 +21,7 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
   },[toast]);
 
   const handleShare = (camp) => {
-    const link = `${window.location.origin}/campaign/${camp._id || camp.id}`;
+    const link = `https://ask-kin.com/campaign/${camp._id || camp.id}`;
     if(navigator.clipboard){
       navigator.clipboard.writeText(link).then(()=>setToast(`✅ Link copied`)).catch(()=>setToast(link));
     } else {
@@ -67,9 +68,9 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
     <>
     <style>{`
       @media (max-width: 640px) {
-       .dash-ready { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
-       .dash-card { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
-       .dash-card-actions { width:100%; justify-content:flex-end; flex-wrap:wrap; }
+      .dash-ready { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
+      .dash-card { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
+      .dash-card-actions { width:100%; justify-content:flex-end; flex-wrap:wrap; }
       }
     `}</style>
 
@@ -111,6 +112,15 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
       )})}
 
       {activeTab==='campaigns' && campaigns.length===0 && <div style={{textAlign:'center', color:'#9ca3af', padding:'40px 0'}}>No campaigns yet</div>}
+
+      {/* SUPPORT - CLEAN */}
+      <div style={{marginTop:'40px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px', padding:'20px'}}>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontWeight:'700', fontSize:'15px'}}>Need help? Contact support</div>
+          <div style={{fontSize:'13px', color:'#6b7280', marginTop:'4px'}}>Tap to call or WhatsApp</div>
+        </div>
+        <SupportContact />
+      </div>
 
       {toast && <div style={{position:'fixed', bottom:'24px', right:'24px', left:'24px', maxWidth:'380px', marginLeft:'auto', background:'#111827', color:'#fff', padding:'12px 18px', borderRadius:'12px', fontSize:'13px', zIndex:100}}>{toast}</div>}
     </div>

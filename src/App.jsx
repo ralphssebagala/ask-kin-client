@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import HomeFeed from './HomeFeed';
 import CampaignDetail from './CampaignDetail';
 import AuthModal from './AuthModal';
@@ -7,11 +7,20 @@ import Dashboard from './Dashboard';
 import CreateCampaign from './CreateCampaign';
 import AskKinAssistant from './AskKinAssistant';
 import FAQ from "./pages/FAQ.jsx";
+import PaymentCallback from "./pages/PaymentCallbackPage.jsx";
+import DonatePage from "./pages/DonatePage.jsx";
+import AdminDashboard from './pages/AdminDashboard';
 
 function CampaignDetailWrapper({ campaigns, onBack, onDonate }) {
   const { id } = useParams();
   const found = campaigns.find(c => (c._id || c.id) === id) || null;
   return <CampaignDetail campaign={found} campaignId={id} onBack={onBack} onDonate={onDonate} />;
+}
+
+function DonateWrapper({ campaigns }) {
+  const { id } = useParams();
+  const found = campaigns.find(c => (c._id || c.id) === id) || null;
+  return <DonatePage campaign={found} />;
 }
 
 function EditCampaignWrapper({ campaigns, onCampaignCreated, onCancel }) {
@@ -22,6 +31,7 @@ function EditCampaignWrapper({ campaigns, onCampaignCreated, onCancel }) {
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -30,30 +40,34 @@ export default function App() {
 
   useEffect(() => {
     fetch('http://localhost:5000/api/campaigns')
-   .then(r => r.json())
-   .then(d => setUserCampaigns(Array.isArray(d)? d : d.campaigns || d.data || []))
-   .catch(() => {});
+    .then(r => r.json())
+    .then(d => setUserCampaigns(Array.isArray(d)? d : d.campaigns || d.data || []))
+    .catch(() => {});
   }, []);
 
-  const active = (p) => window.location.pathname === p;
+  const active = (p) => location.pathname === p;
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+    setIsAuthOpen(false);
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>{`
-     .ak-header{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid #f1f5f9}
-     .ak-header-inner{max-width:1280px;margin:0 auto;padding:0 12px;height:60px;display:flex;align-items:center;justify-content:space-between}
-     .ak-logo{display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0}
-     .ak-logo img{width:54px;height:54px;border-radius:11px;object-fit:contain;display:block}
-     .ak-logo span{font-size:20px;font-weight:900;color:#0f4d3a;letter-spacing:-0.2px;white-space:nowrap}
-     .ak-nav,.ak-right{display:none}
-     .ak-hamburger{background:none;border:none;font-size:22px;cursor:pointer;padding:6px}
+      .ak-header{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid #f1f5f9}
+      .ak-header-inner{max-width:1280px;margin:0 auto;padding:0 12px;height:60px;display:flex;align-items:center;justify-content:space-between}
+      .ak-logo{display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0}
+      .ak-logo img{width:54px;height:54px;border-radius:11px;object-fit:contain;display:block}
+      .ak-logo span{font-size:20px;font-weight:900;color:#0f4d3a;letter-spacing:-0.2px;white-space:nowrap}
+      .ak-nav,.ak-right{display:none}
+      .ak-hamburger{background:none;border:none;font-size:22px;cursor:pointer;padding:6px}
         @media(min-width:768px){
-       .ak-header-inner{height:76px;padding:0 24px}
-       .ak-logo img{width:66px;height:66px;border-radius:14px}
-       .ak-logo span{font-size:22px}
-       .ak-nav{display:flex;gap:28px;align-items:center}
-       .ak-right{display:flex;gap:12px;align-items:center}
-       .ak-hamburger{display:none}
+        .ak-header-inner{height:76px;padding:0 24px}
+        .ak-logo img{width:66px;height:66px;border-radius:14px}
+        .ak-logo span{font-size:22px}
+        .ak-nav{display:flex;gap:28px;align-items:center}
+        .ak-right{display:flex;gap:12px;align-items:center}
+        .ak-hamburger{display:none}
         }
       `}</style>
 
@@ -75,9 +89,9 @@ export default function App() {
             {currentUser? (
               <span style={{ fontSize: '13px', fontWeight: 600 }}>Hi, {currentUser.fullName?.split(' ')[0]}</span>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Sign In</button>
+              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Sign In</button>
             )}
-            <button onClick={() => currentUser? navigate('/create-campaign') : setIsAuthOpen(true)} style={{ background: '#0f4d3a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '999px', fontWeight: 700, cursor: 'pointer' }}>Start a Fundraiser</button>
+            <button onClick={() => currentUser? navigate('/create-campaign') : setIsAuthOpen(true)} style={{ background: '#0f4d3a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '999px', fontWeight: 700, cursor: 'pointer' }}>Start a Fundraiser</button>
           </div>
 
           <button className="ak-hamburger" onClick={() => setIsMenuOpen(v =>!v)}>☰</button>
@@ -86,27 +100,21 @@ export default function App() {
         {isMenuOpen && (
           <div style={{ position: 'fixed', left: 0, right: 0, top: 60, bottom: 0, background: 'rgba(0,0,0,0.35)', zIndex: 50 }} onClick={() => setIsMenuOpen(false)}>
             <div style={{ background: 'white', width: '82%', maxWidth: 320, height: '100%', padding: 20, overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src="/logo.png" alt="" style={{ width: 28, height: 28, borderRadius: 7 }} />
                   <b style={{ color: '#0f4d3a' }}>Ask Kin</b>
                 </div>
-                <button onClick={() => setIsMenuOpen(false)} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: 999, cursor: 'pointer' }}>✕</button>
+                <button onClick={() => setIsMenuOpen(false)} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: 999, cursor: 'pointer' }}>×</button>
               </div>
-
               <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 600 }}>Explore Our Fundraisers</button>
               <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 600 }}>Ask Kin Assistant</button>
               <button onClick={() => { navigate('/dashboard'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 600 }}>Dashboard</button>
               <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 600 }}>FAQ</button>
-
               <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {!currentUser && (
-                  <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 600, padding: '8px 0' }}>Sign In</button>
-                )}
+                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 600, padding: '8px 0' }}>Sign In</button>}
                 <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', background: '#0f4d3a', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 700 }}>Start a Fundraiser</button>
               </div>
-
             </div>
           </div>
         )}
@@ -115,23 +123,34 @@ export default function App() {
       <main style={{ flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<HomeFeed onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />} />
-          <Route path="/campaign/:id" element={<CampaignDetailWrapper campaigns={userCampaigns} onBack={() => navigate('/')} onDonate={(d) => setUserDonations(p => [d,...p])} />} />
+          {/* FIXED: Donate Now now navigates to Donate Page */}
+          <Route
+            path="/campaign/:id"
+            element={
+              <CampaignDetailWrapper
+                campaigns={userCampaigns}
+                onBack={() => navigate('/')}
+                onDonate={(c) => navigate(`/donate/${c._id || c.id}`)}
+              />
+            }
+          />
+          <Route path="/donate/:id" element={<DonateWrapper campaigns={userCampaigns} />} />
+          <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/dashboard" element={<Dashboard user={currentUser} userCampaigns={userCampaigns} userDonations={userDonations} />} />
           <Route path="/assistant" element={<AskKinAssistant />} />
           <Route path="/create-campaign" element={<CreateCampaign onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/edit-campaign/:id" element={<EditCampaignWrapper campaigns={userCampaigns} onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>
 
       <footer style={{ padding: '20px', textAlign: 'center' }}>
         <div>© {new Date().getFullYear()} Ask Kin</div>
-        <Link to="/faq" className="text-sm text-gray-500 hover:text-black" style={{ marginTop: '8px', display: 'inline-block' }}>
-          FAQ
-        </Link>
+        <Link to="/faq" style={{ marginTop: '8px', display: 'inline-block', fontSize: '14px', color: '#6b7280' }}>FAQ</Link>
       </footer>
 
-      {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
+      {isAuthOpen && <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={handleAuthSuccess} />}
     </div>
   );
 }
