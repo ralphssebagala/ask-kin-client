@@ -36,16 +36,15 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [userCampaigns, setUserCampaigns] = useState([]);
   const [userDonations, setUserDonations] = useState([]);
 
   useEffect(() => {
     fetch('https://api.ask-kin.com/api/campaigns')
-    .then(r => r.json())
-    .then(d => setUserCampaigns(Array.isArray(d)? d : d.campaigns || d.data || []))
-    .catch(() => {});
+   .then(r => r.json())
+   .then(d => setUserCampaigns(Array.isArray(d)? d : d.campaigns || d.data || []))
+   .catch(() => {});
     const savedEmail = localStorage.getItem('userEmail');
     const savedName = localStorage.getItem('userName');
     const savedRole = localStorage.getItem('userRole');
@@ -85,7 +84,6 @@ export default function App() {
           </div>
         </div>
       </header>
-
       <main style={{ flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<HomeFeed onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />} />
@@ -105,7 +103,6 @@ export default function App() {
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
-
       <footer style={{ padding: '24px', textAlign: 'center', borderTop:'1px solid #f1f5f9', marginTop:20 }}>
         <div>© {new Date().getFullYear()} Ask Kin - ask-kin.com</div>
         <div style={{marginTop:'12px', display:'flex', gap:'16px', justifyContent:'center', fontSize:'13px', flexWrap:'wrap'}}>
@@ -114,11 +111,8 @@ export default function App() {
           <Link to="/terms" style={{ color: '#065f46', fontWeight:700 }}>Terms</Link>
           <a href="mailto:support@ask-kin.com" style={{ color: '#6b7280' }}>support@ask-kin.com</a>
         </div>
-        <div style={{marginTop:'8px', fontSize:'11px', color:'#9ca3af'}}>Contact: support@ask-kin.com | https://ask-kin.com</div>
       </footer>
-
       {isAuthOpen && <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={handleAuthSuccess} />}
     </div>
   );
 }
-
