@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CATEGORIES = ['Medical','Happy Moments','Burials & Funerals','Religion & Faith','Education','Family Support','Disaster Relief','Business & Work','NGO / Ongoing','Wishes','Others'];
 
@@ -21,6 +22,29 @@ const PROVIDERS = [
 ];
 
 export default function CreateCampaign({ onSuccess }) {
+  const navigate = useNavigate();
+
+  // === KYC GUARD ===
+  const currentUser = useMemo(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      return stored.email ? stored : null;
+    } catch { return null; }
+  }, []);
+  const kycStatus = (currentUser?.kycStatus || currentUser?.KYC_STATUS || '').toLowerCase();
+  const isApproved = kycStatus === 'approved' || kycStatus === 'verified';
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/'); // not logged in
+      return;
+    }
+    if (!isApproved) {
+      // block direct URL access /create-campaign without approval
+      navigate('/dashboard');
+    }
+  }, [currentUser, isApproved, navigate]);
+
   const [form, setForm] = useState({
     title:'', category:'Medical', goal:'5000000', durationDays:30,
     location:'Uganda', townCity:'Kampala', country:'UG',
@@ -49,6 +73,11 @@ export default function CreateCampaign({ onSuccess }) {
   };
 
   const handleSubmit = async ()=>{
+    if(!isApproved) {
+      alert('Verification required. Please wait for approval.');
+      navigate('/dashboard');
+      return;
+    }
     if(!form.title.trim()) return alert('Title required');
     if(!isNGO ||!isOngoing){
       if(!form.goal) return alert('Goal required');
@@ -62,7 +91,6 @@ export default function CreateCampaign({ onSuccess }) {
         category: form.category,
         description: form.story,
         story: form.story,
-        // NGO / Ongoing indefinite = no target
         goal: isNGO && isOngoing? 0 : Number(form.goal),
         isOngoing: isNGO && isOngoing,
         durationDays: isNGO && isOngoing? 0 : Number(form.durationDays),
@@ -84,7 +112,8 @@ export default function CreateCampaign({ onSuccess }) {
         tiktokUrl: form.tiktokUrl,
         image: form.image,
         coverImage: form.image,
-        creator: 'Test User'
+        creator: currentUser?.fullName || currentUser?.name || 'Test User',
+        creatorEmail: currentUser?.email
       };
 
       const res = await fetch('http://localhost:5000/api/campaigns', {
@@ -96,6 +125,7 @@ export default function CreateCampaign({ onSuccess }) {
       if(data.status==='success'){
         alert('✅ Published! ' + data.campaign.id);
         if(onSuccess) onSuccess(data.campaign);
+        navigate('/dashboard');
       }else{
         alert('Error: ' + data.message);
       }
@@ -106,6 +136,21 @@ export default function CreateCampaign({ onSuccess }) {
 
   const inputStyle = {width:'100%', border:'1px solid #e2e8f0', borderRadius:'10px', padding:'10px 12px', fontSize:'13px', outline:'none'};
   const labelStyle = {fontSize:'12px', fontWeight:'800', color:'#0f172a', marginBottom:'4px', display:'block'};
+
+  // If not approved, show blocking screen (prevents flash)
+  if (!currentUser) return null;
+  if (!isApproved) {
+    return (
+      <div style={{maxWidth:'560px', margin:'0 auto', padding:'40px 20px', textAlign:'center'}}>
+        <div style={{background:'white', borderRadius:'16px', padding:'32px', boxShadow:'0 4px 20px rgba(0,0,0,0.05)'}}>
+          <div style={{fontSize:'40px', marginBottom:'12px'}}>⏳</div>
+          <h2 style={{fontSize:'18px', fontWeight:'800'}}>Verification required</h2>
+          <p style={{fontSize:'14px', color:'#6b7280', marginTop:'8px'}}>Your account is under review. You'll be notified once approved. Then you can create campaigns.</p>
+          <button onClick={()=>navigate('/dashboard')} style={{marginTop:'20px', background:'#0f4d3a', color:'white', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', cursor:'pointer'}}>Go to Dashboard</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{maxWidth:'560px', margin:'0 auto', background:'#f8fafc', minHeight:'100vh', padding:'12px 12px 90px'}}>
@@ -138,42 +183,25 @@ export default function CreateCampaign({ onSuccess }) {
           </div>
         </div>
 
-        {/* NGO / ONGOING TOGGLE */}
         {isNGO && (
-          <div style={{marginTop:'12px', background:'#ecfdf5', border:'1px solid #a7f3d0', borderRadius:'10px', padding:'10px 12px', display:'flex', alignItems:'center', gap:'8px'}}>
-            <input type="checkbox" id="ongoingCheck" checked={isOngoing} onChange={e=>setIsOngoing(e.target.checked)} />
-            <label htmlFor="ongoingCheck" style={{fontSize:'12px', fontWeight:'700', color:'#064e3b', cursor:'pointer'}}>
-              Keep as ongoing with no target / indefinite (NGO)
+          <div style={{marginTop:'12px', background:'#f0fdf4', border:'1px solid #a7f3d0', borderRadius:'10px', padding:'10px'}}>
+            <label style={{display:'flex', gap:'8px', alignItems:'center', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+              <input type="checkbox" checked={isOngoing} onChange={e=>setIsOngoing(e.target.checked)} />
+              Ongoing / No target (NGO - indefinite fundraising)
             </label>
           </div>
         )}
 
-        {/* GOAL + DURATION 55% / 45% */}
-        <div style={{display:'grid', gridTemplateColumns:'55% 45%', gap:'10px', marginTop:'12px'}}>
-          <div style={{opacity: isNGO && isOngoing? 0.45 : 1}}>
-            <label style={labelStyle}>Goal Amount ({form.campaignCurrency}) {isNGO && isOngoing && <span style={{fontWeight:'400', color:'#059669'}}>— No target</span>}</label>
-            <input type="number" style={inputStyle} value={isNGO && isOngoing? '' : form.goal} onChange={e=>setForm({...form, goal:e.target.value})} placeholder={isNGO && isOngoing? 'Ongoing — no target amount' : '5000000'} disabled={isNGO && isOngoing} />
-            {!isOngoing && <div style={{fontSize:'10px', color:'#64748b', marginTop:'3px'}}>Min threshold: {form.campaignCurrency} {(form.campaignCurrency==='UGX'?50000:500).toLocaleString()} to payout Monday</div>}
-            {isNGO && isOngoing && <div style={{fontSize:'10px', color:'#059669', marginTop:'3px'}}>This campaign will run indefinitely without a goal</div>}
-          </div>
-          <div style={{opacity: isNGO && isOngoing? 0.45 : 1}}>
-            <label style={labelStyle}>Duration</label>
-            <select style={inputStyle} value={form.durationDays} onChange={e=>setForm({...form, durationDays: Number(e.target.value)})} disabled={isNGO && isOngoing}>
-              {DURATIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}
-              {isNGO && <option value={0}>Indefinite / Ongoing</option>}
-            </select>
-          </div>
-        </div>
-
-        {/* LOCATION */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'12px'}}>
           <div>
-            <label style={labelStyle}>Country / Location</label>
-            <input style={inputStyle} value={form.location} onChange={e=>setForm({...form, location:e.target.value})} placeholder="Uganda" />
+            <label style={labelStyle}>Goal Amount</label>
+            <input style={inputStyle} type="number" value={form.goal} disabled={isNGO && isOngoing} onChange={e=>setForm({...form, goal:e.target.value})} placeholder="5000000" />
           </div>
           <div>
-            <label style={labelStyle}>Town / City</label>
-            <input style={inputStyle} value={form.townCity} onChange={e=>setForm({...form, townCity:e.target.value})} placeholder="Kampala, Wakiso, Gulu..." />
+            <label style={labelStyle}>Duration</label>
+            <select style={inputStyle} value={form.durationDays} disabled={isNGO && isOngoing} onChange={e=>setForm({...form, durationDays:Number(e.target.value)})}>
+              {DURATIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
           </div>
         </div>
 
@@ -182,7 +210,6 @@ export default function CreateCampaign({ onSuccess }) {
           <textarea style={{...inputStyle, minHeight:'110px', resize:'vertical'}} value={form.story} onChange={e=>setForm({...form, story:e.target.value})} placeholder="Explain why, who benefits, how funds will be used..." />
         </div>
 
-        {/* VIDEO LINKS */}
         <div style={{background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:'12px', padding:'12px', marginTop:'12px'}}>
           <label style={labelStyle}>Video Links (Optional - 3x more trust)</label>
           <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'6px'}}>
@@ -197,7 +224,6 @@ export default function CreateCampaign({ onSuccess }) {
           </div>
         </div>
 
-        {/* IMAGE - YOUR IMPRESSIVE LOGIC PRESERVED */}
         <div style={{marginTop:'12px'}}>
           <label style={labelStyle}>Cover Image</label>
           <input type="file" accept="image/*" onChange={handleImage} style={inputStyle} />
@@ -205,7 +231,6 @@ export default function CreateCampaign({ onSuccess }) {
           <div style={{fontSize:'10px', color:'#94a3b8', marginTop:'4px'}}>We auto-optimize large images to avoid ORA-01461</div>
         </div>
 
-        {/* PAYOUT */}
         <div style={{marginTop:'16px', background:'white', border:'1px solid #e2e8f0', borderRadius:'12px', padding:'12px'}}>
           <label style={labelStyle}>Payout Method (Where money goes)</label>
           <div style={{display:'flex', gap:'8px', margin:'8px 0'}}>
@@ -273,3 +298,4 @@ export default function CreateCampaign({ onSuccess }) {
     </div>
   );
 }
+

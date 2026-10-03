@@ -1,57 +1,36 @@
 export const faqs = [
-  {
-    category: "About the Platform & Vision",
-    q: "What is Ask Kin?",
-    a: "Ask Kin is a crowdfunding and community support platform built to empower grassroots initiatives, local projects, and mutual aid directly among community members."
-  },
-  {
-    category: "About the Platform & Vision",
-    q: "What does the logo represent?",
-    a: "The Ask Kin logo features a multi-layered protective shield cradled by an organic hand, symbolizing safety, community guardianship, trusted support, and the collective effort of looking out for one another."
-  },
-  {
-    category: "Fundraisers & Donations",
-    q: "Do I need an account to donate?",
-    a: "No, you can contribute to campaigns directly from the feed or campaign detail view without needing to sign in first."
-  },
-  {
-    category: "Fundraisers & Donations",
-    q: "When is an account required?",
-    a: "An account is only required when you want to start and manage your own fundraiser."
-  },
-  {
-    category: "Fundraisers & Donations",
-    q: "Can I fundraise for myself?",
-    a: "Yes! On Ask Kin, you can fundraise for almost anything. For instance, the 'Wishes' category is specifically designed for personal goals — whether you need your community to help replace a stolen wedding ring or bike, or even to raise funds for tickets to see your favorite band."
-  },
-  {
-    category: "Fundraisers & Donations",
-    q: "Can I track the campaigns I've supported?",
-    a: "Yes, once signed in, your user Dashboard tracks your active campaigns, donation history, and contribution statuses in one centralized place."
-  },
-  {
-    category: "Accessibility & Representation",
-    q: "What if someone in need cannot create their own fundraiser?",
-    a: "Everyone deserves access to support. In situations where an individual cannot create a campaign on their own due to illiteracy or lack of identification, a trusted family member, close friend, or community advocate can set up and manage the fundraiser on their behalf, with clear transparency so donors know who is operating it."
-  },
-  {
-    category: "Accessibility & Representation",
-    q: "Can registered organizations or local groups start a campaign?",
-    a: "Yes, local community groups and registered organizations are welcome to raise funds. A designated representative or verified team member creates the campaign and provides their personal identification on behalf of the organization, acting as the accountable lead."
-  },
-  {
-    category: "Security & Trust",
-    q: "How does Ask Kin ensure trust and prevent fraud?",
-    a: "Ask Kin is built on a community-guardianship model. We encourage transparent storytelling, verification steps, and direct connections between organizers and supporters to ensure grassroots authenticity."
-  },
-  {
-    category: "Security & Trust",
-    q: "Are my payment details and personal information secure?",
-    a: "Yes. Transactions and personal data handling are structured to meet high security standards, protecting your information whether you are browsing, donating, or managing a campaign."
-  },
-  {
-    category: "Security & Trust",
-    q: "How are campaign funds handled?",
-    a: "Campaign organizers are responsible for withdrawing and distributing funds raised through their initiatives, with tracking tools provided in your user dashboard for full transparency."
-  }
+  { category: "About the Platform & Vision", q: "What is Ask Kin?", a: "Ask Kin is a native East African crowdfunding and community support platform built to empower grassroots initiatives, local projects, individuals, and mutual aid. Motto: 'Rekindle the Gift of Giving.' We are not a charity; we are a technology platform that connects people who need help with their kin (community).", keywords: [`what is ask kin`,`about`,`vision`,`motto`] },
+  { category: "About the Platform & Vision", q: "What does the Ask Kin logo represent?", a: "The multi-layered protective shield cradled by an organic hand symbolizes safety, community guardianship, trusted support, and the collective effort of looking out for one another.", keywords: [`logo`,`shield`,`hand`] },
+  { category: "About the Platform & Vision", q: "How does Ask Kin work?", a: "Anyone can start a fundraiser in under 5 minutes. Donors donate instantly via Mobile Money, Card, or Bank without an account. Funds are collected by a Central Bank-licensed Financial Aggregator and held in escrow. Every Monday at 11:00 AM EAT, any campaign with UGX 50,000 or equivalent and above is automatically paid out to the organizer's Mobile Money or Bank.", keywords: [`how does it work`,`how it works`,`process`,`escrow`,`aggregator`] },
+  { category: "About the Platform & Vision", q: "Which countries can receive funds?", a: "V1 supports payouts in 5 countries: Uganda, Kenya, Tanzania, Rwanda, and Zambia. Fundraiser location is chosen at creation and cannot be changed after publishing. Diaspora can donate FROM anywhere in the world, but payout must be TO one of these 5 countries.", keywords: [`countries`,`uganda`,`kenya`,`tanzania`,`rwanda`,`zambia`,`diaspora`] },
+  { category: "Starting a Fundraiser", q: "How do I start a fundraiser on Ask Kin?", a: "1. Click 'Start a Fundraiser' 2. Create account (Phone + NIN/Passport) 3. Choose Category: Medical, Education, Family Support, Burials & Funerals, Happy Moments, Wishes, Business, Community Projects, Emergencies 4. Title: Short, specific (e.g., 'Help Aisha's School Fees Term 2') 5. Add Cover Photo and optional YouTube/TikTok link 6. Tell your story: Who, what happened, how funds will be used with breakdown 7. Set Goal and Duration or choose Ongoing Campaign 8. Choose payout currency and MoMo/Bank details 9. Submit for review — usually approved in under 2 hours.", keywords: [`start`,`create`,`new fundraiser`,`how to start`,`steps`] },
+  { category: "Starting a Fundraiser", q: "Do I need to pay to start a fundraiser?", a: "No. Starting is 100% free. We only deduct a 10% transaction fee from each donation received to cover aggregator fees, Mobile Money/bank charges, and platform maintenance. You never pay upfront.", keywords: [`pay to start`,`cost`,`free`] },
+  { category: "Starting a Fundraiser", q: "Can I create a fundraiser without a goal or deadline?", a: "Yes. Select 'Ongoing Campaign' during setup. Ideal for NGOs, churches, SACCOs, community groups, and schools that rely on continuous donations. You can add a goal later if you want.", keywords: [`no goal`,`no deadline`,`ongoing`,`ngo`,`continuous`] },
+  { category: "Donations", q: "Do I need an account to donate?", a: "No. You can donate directly from the feed or campaign page as a guest via Mobile Money, Card, or Bank. An account is only needed to start and manage your own fundraiser or to track your donation history.", keywords: [`account to donate`,`guest`,`no account`] },
+  { category: "Donations", q: "What is the minimum and maximum donation?", a: "Minimum: UGX 1,000 (or equivalent ~$0.30). Maximum: No limit, but large donations above UGX 10M may trigger additional verification for security.", keywords: [`minimum`,`maximum`,`least`,`most`,`limit`] },
+  { category: "Donations", q: "Can I donate anonymously?", a: "Yes. On the donation page, check 'Donate anonymously.' Your name will be hidden from public feed, but organizer still sees it in dashboard for accountability. Amount is never public unless you choose to show it.", keywords: [`anonymous`,`hide name`,`private donation`] },
+  { category: "Donations", q: "Can I donate from abroad / diaspora?", a: "Yes. Diaspora can donate via international card (Visa/Mastercard) in USD, EUR, GBP. It will be converted to campaign's payout currency. International conversion fees may apply from your bank.", keywords: [`diaspora`,`abroad`,`international`,`usd`,`card`,`outside`] },
+  { category: "Donations", q: "Can I get a receipt for my donation?", a: "Yes. Instant receipt is sent to your email/SMS after donation. If logged in, all receipts are saved in Dashboard > Donation History.", keywords: [`receipt`,`proof`,`email receipt`] },
+  { category: "Donations", q: "Can I get a refund?", a: "Donations are final and go directly to organizer via licensed aggregator. Refunds only considered if proven fraud or technical double-charge. Contact support within 48 hours with transaction ID.", keywords: [`refund`,`return money`,`reverse`] },
+  { category: "Managing Your Campaign", q: "Can I track my campaign and donations?", a: "Yes. Once you create account, Dashboard shows: total raised, donor list, payout status, pending balance, views, shares, withdrawal history. You also get email/SMS notifications for new donations and every Monday payout.", keywords: [`track`,`dashboard`,`donation history`,`status`] },
+  { category: "Managing Your Campaign", q: "Can I edit my fundraiser after publishing?", a: "Yes. Go to Dashboard > My Campaigns > Edit. You can edit story, photo, video, goal amount, and duration. You cannot change country, payout currency, or payout account after first donation for security. Contact support if you need to change payout details.", keywords: [`edit`,`change`,`update campaign`] },
+  { category: "Managing Your Campaign", q: "Can I close or delete my fundraiser?", a: "Yes. Dashboard > My Campaigns > Manage > Close Campaign (stops new donations but keeps page visible) or Delete Campaign (permanently removes, only if no donations received). If you raised funds, you must Close, not Delete, for audit.", keywords: [`close`,`delete`,`archive`,`stop`] },
+  { category: "Managing Your Campaign", q: "Can I fundraise for someone else?", a: "Absolutely. A trusted family member, friend, or community advocate can create and manage a campaign for someone who cannot do it themselves due to illiteracy, illness, age, or lack of ID. You must state: 'I am [Name], fundraising for [Beneficiary] because...' and provide your own ID for verification.", keywords: [`for someone else`,`on behalf`,`illiteracy`,`proxy`] },
+  { category: "Managing Your Campaign", q: "Can I add team members or delegates?", a: "Yes. In Dashboard > Manage Team, you can add a delegate with email/phone. Delegates can help post updates, thank donors, and share, but cannot change payout account or withdraw funds. Only owner can withdraw.", keywords: [`team`,`delegate`,`add member`,`help manage`] },
+  { category: "Managing Your Campaign", q: "What makes a campaign successful? Tips", a: "Campaigns that do this raise 4x more: 1) Real, clear photo (not stock), 2) Story >200 words with specific breakdown (e.g., 'UGX 2M hospital, 500k drugs'), 3) Video (30 sec phone video), 4) Share daily on WhatsApp Status, Facebook, TikTok with personal message, 5) Post Updates every 2-3 days, 6) Ask 5 close friends to donate first — social proof drives others.", keywords: [`tips`,`successful`,`raise more`,`how to get donations`] },
+  { category: "Organizations & Groups", q: "Can registered organizations or local groups start a campaign?", a: "Yes. NGOs, CBOs, churches, schools, and local groups are welcome. A designated representative creates campaign using personal NIN/Passport as accountable lead. For larger NGOs, we may request introduction letter or registration certificate during review.", keywords: [`organization`,`ngo`,`group`,`church`,`cbo`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "How does Ask Kin handle payouts?", a: "Automatic weekly payouts: Every Monday at 11:00 AM EAT, system automatically pays out ALL campaigns with balance of UGX 50,000 (or equivalent) or more. No manual request needed. You get SMS + email confirmation.", keywords: [`payout`,`when paid`,`monday`,`11am`,`withdraw`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "What if my campaign has less than UGX 50,000?", a: "Balance stays in escrow and rolls over to next Monday. Once it reaches UGX 50,000, it will be paid out. For Ongoing Campaigns, this rolls indefinitely.", keywords: [`less than 50000`,`threshold`,`small balance`,`rollover`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "How are campaign funds handled and secured?", a: "Funds are NOT held by Ask Kin directly. They are collected and held by a Central Bank-licensed Financial Aggregator in a segregated escrow account. Ask Kin provides tracking, but licensed aggregator does money movement for compliance.", keywords: [`funds handled`,`escrow`,`aggregator`,`secure`,`central bank`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "What are the fees?", a: "One simple fee: 10% per donation. Covers MoMo/bank charges, aggregator fees, platform fee. Example: Donor gives UGX 100k → Organizer receives UGX 90k. No monthly, listing, or withdrawal fees. International card donations may have extra bank conversion fees.", keywords: [`fees`,`10 percent`,`charges`,`how much`,`commission`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "How long until I receive money in my Mobile Money/Bank?", a: "After Monday 11:00 AM payout trigger, Mobile Money arrives within 2 hours, Bank within 24-48 hours depending on bank. Delays can happen on public holidays.", keywords: [`how long`,`receive money`,`delay`,`mobile money time`,`bank time`] },
+  { category: "Money: Payouts, Fees, Withdrawals", q: "What ID and withdrawal requirements are needed?", a: "Valid Government ID (National ID/NIN, Passport, or Refugee ID), matching Mobile Money number registered in your name or Bank account in your name. Name on ID must match payout account name. For organizations, ID of designated representative.", keywords: [`id`,`kyc`,`nin`,`passport`,`withdrawal requirements`,`verification`] },
+  { category: "Trust, Safety & Rules", q: "How does Ask Kin prevent fraud?", a: "4 layers: 1) ID verification for all organizers, 2) Campaign review before publishing, 3) Community guardianship — anyone can Report a campaign, 4) Escrow via licensed aggregator. We encourage transparent storytelling, regular updates, receipts.", keywords: [`fraud`,`scam`,`prevent`,`trust`,`safety`] },
+  { category: "Trust, Safety & Rules", q: "Are my payment details safe?", a: "Yes. We never store card or MoMo PINs. All payments processed by PCI-compliant aggregator. Personal data encrypted and handled per Uganda Data Protection Act and regional standards.", keywords: [`payment safe`,`secure`,`data protection`,`pin`] },
+  { category: "Trust, Safety & Rules", q: "What campaigns are NOT allowed?", a: "Not allowed: Fraud/scam, money laundering, terrorism financing, illegal drugs/weapons, gambling, pyramid schemes, hate speech/discrimination, sexual exploitation, campaigns that dox others, or collecting for someone without consent (except minors/incapacitated with guardian).", keywords: [`not allowed`,`prohibited`,`banned`,`illegal`] },
+  { category: "Trust, Safety & Rules", q: "How do I report a suspicious campaign?", a: "On every campaign page, click 'Report'. Choose reason and add details. Trust & Safety team reviews within 24 hours. You can also WhatsApp Support.", keywords: [`report`,`suspicious`,`flag`] },
+  { category: "Trust, Safety & Rules", q: "Why was my campaign rejected?", a: "Common: Unclear story/goal, prohibited category, duplicate campaign, mismatched ID and payout name, photo violates policy. You get email with reason and can resubmit after fixing.", keywords: [`rejected`,`denied`,`why rejected`] },
+  { category: "Sharing & Growth", q: "How do I share my fundraiser?", a: "On campaign page click 'Share'. You get link to post on WhatsApp, Facebook, X, TikTok. Pro tip: Don't just drop link — write 2 lines personal: 'Friends, I'm raising for my mum's surgery. Even 5k helps. Please share.'", keywords: [`share`,`link`,`whatsapp`,`facebook`] },
+  { category: "Support", q: "How do I contact Ask Kin Support?", a: "Fastest: In-app chat on FAQ page, WhatsApp button, or Call button in SupportContact component. Support hours: 8am-8pm EAT daily. For urgent fraud, use Report button — it's prioritized.", keywords: [`contact`,`support`,`help`,`whatsapp`,`phone`] },
 ];
+

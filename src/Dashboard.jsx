@@ -1,11 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SupportContact from "../components/SupportContact";
+// REMOVED SupportContact - moved to public FAQ page
 
 export default function Dashboard({ user, userCampaigns = [], userDonations = [] }) {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
+
+  // Resolve user from props OR localStorage (for direct navigation)
+  const currentUser = useMemo(() => {
+    if (user && user.email) return user;
+    try {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      return stored.email ? stored : null;
+    } catch { return null; }
+  }, [user]);
+
+  const kycStatus = (currentUser?.kycStatus || currentUser?.KYC_STATUS || '').toLowerCase();
+  const isApproved = kycStatus === 'approved' || kycStatus === 'verified';
+  const isPending = kycStatus === 'pending' || !kycStatus;
+  const isRejected = kycStatus === 'rejected';
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/');
+    }
+  }, [currentUser, navigate]);
 
   const sorted = useMemo(()=> [...(userCampaigns||[])].sort((a,b)=>{
     const da = new Date(a?.createdAt || a?.date || 0);
@@ -64,6 +84,16 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
     }
   };
 
+  const handleCreateClick = () => {
+    if (!isApproved) {
+      setToast(isRejected ? '❌ Verification rejected. Contact support via FAQ.' : '⏳ Verification pending. You will be notified once approved.');
+      return;
+    }
+    navigate('/create-campaign');
+  };
+
+  if (!currentUser) return null;
+
   return (
     <>
     <style>{`
@@ -76,13 +106,45 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
 
     <div style={{maxWidth:'840px', margin:'0 auto', padding:'24px 20px'}}>
       <div style={{textAlign:'center', marginBottom:'24px'}}>
-        <h1 style={{fontSize:'32px', fontWeight:'800'}}>Welcome back, {user?.name || 'Creator'}</h1>
+        <h1 style={{fontSize:'32px', fontWeight:'800'}}>Welcome back, {currentUser?.name || currentUser?.fullName || 'Creator'}</h1>
         <p style={{color:'#6b7280', fontSize:'15px', marginTop:'6px'}}>Manage your fundraisers and track contributions.</p>
       </div>
 
-      <div className="dash-ready" style={{padding:'20px 24px', background:'#ecfdf5', border:'1px solid #a7f3d0', borderRadius:'20px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-        <div><div style={{fontWeight:'700', color:'#064e3b'}}>Ready to launch?</div><div style={{fontSize:'14px', color:'#047857'}}>Start a new campaign.</div></div>
-        <button onClick={()=>navigate('/create-campaign')} style={{background:'#0f4d3a', color:'#fff', fontWeight:'700', padding:'12px 20px', borderRadius:'12px', border:'none', cursor:'pointer'}}>+ Create New Campaign</button>
+      {isPending && (
+        <div style={{padding:'14px 18px', background:'#fef3c7', border:'1px solid #fcd34d', borderRadius:'14px', marginBottom:'16px', display:'flex', gap:'12px', alignItems:'center'}}>
+          <div style={{fontSize:'20px'}}>⏳</div>
+          <div>
+            <div style={{fontWeight:'700', fontSize:'14px', color:'#92400e'}}>Verification pending</div>
+            <div style={{fontSize:'13px', color:'#78350f', marginTop:'2px'}}>Your account is under review. You'll be notified once approved. Need help? Visit <a href="/faq" style={{textDecoration:'underline', fontWeight:600}}>FAQ → Support</a>.</div>
+          </div>
+        </div>
+      )}
+      {isRejected && (
+        <div style={{padding:'14px 18px', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'14px', marginBottom:'16px'}}>
+          <div style={{fontWeight:'700', fontSize:'14px', color:'#991b1b'}}>Verification rejected</div>
+          <div style={{fontSize:'13px', color:'#7f1d1d', marginTop:'2px'}}>Please contact support via <a href="/faq" style={{textDecoration:'underline'}}>FAQ page</a> or re-upload clear documents.</div>
+        </div>
+      )}
+      {isApproved && (
+        <div style={{padding:'10px 18px', background:'#ecfdf5', border:'1px solid #a7f3d0', borderRadius:'14px', marginBottom:'16px', fontSize:'13px', color:'#065f46'}}>
+          ✅ Verified - You can create campaigns
+        </div>
+      )}
+
+      <div className="dash-ready" style={{padding:'20px 24px', background: isApproved ? '#ecfdf5' : '#f9fafb', border:`1px solid ${isApproved ? '#a7f3d0' : '#e5e7eb'}`, borderRadius:'20px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <div><div style={{fontWeight:'700', color: isApproved ? '#064e3b' : '#6b7280'}}>Ready to launch?</div><div style={{fontSize:'14px', color: isApproved ? '#047857' : '#9ca3af'}}>{isApproved ? 'Start a new campaign.' : 'Verification required before creating.'}</div></div>
+        <button 
+          onClick={handleCreateClick} 
+          disabled={!isApproved}
+          style={{
+            background: isApproved ? '#0f4d3a' : '#9ca3af', 
+            color:'#fff', fontWeight:'700', padding:'12px 20px', borderRadius:'12px', border:'none', 
+            cursor: isApproved ? 'pointer' : 'not-allowed',
+            opacity: isApproved ? 1 : 0.7
+          }}
+        >
+          + Create New Campaign
+        </button>
       </div>
 
       <div style={{display:'flex', gap:'24px', borderBottom:'1px solid #e5e7eb', marginTop:'32px', marginBottom:'20px'}}>
@@ -113,13 +175,9 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
 
       {activeTab==='campaigns' && campaigns.length===0 && <div style={{textAlign:'center', color:'#9ca3af', padding:'40px 0'}}>No campaigns yet</div>}
 
-      {/* SUPPORT - CLEAN */}
-      <div style={{marginTop:'40px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px', padding:'20px'}}>
-        <div style={{textAlign:'center'}}>
-          <div style={{fontWeight:'700', fontSize:'15px'}}>Need help? Contact support</div>
-          <div style={{fontSize:'13px', color:'#6b7280', marginTop:'4px'}}>Tap to call or WhatsApp</div>
-        </div>
-        <SupportContact />
+      {/* SUPPORT REMOVED FROM DASHBOARD - Now public on FAQ page */}
+      <div style={{marginTop:'40px', textAlign:'center', padding:'16px', background:'#f9fafb', border:'1px dashed #e5e7eb', borderRadius:'12px'}}>
+        <div style={{fontSize:'13px', color:'#6b7280'}}>Need help? <a href="/faq" style={{color:'#0f4d3a', fontWeight:700, textDecoration:'none'}}>Contact support on FAQ page →</a></div>
       </div>
 
       {toast && <div style={{position:'fixed', bottom:'24px', right:'24px', left:'24px', maxWidth:'380px', marginLeft:'auto', background:'#111827', color:'#fff', padding:'12px 18px', borderRadius:'12px', fontSize:'13px', zIndex:100}}>{toast}</div>}
