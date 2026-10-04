@@ -57,7 +57,7 @@ export default function HomeFeed({ onSelectCampaign }) {
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/campaigns')
+    fetch('https://api.ask-kin.com/api/campaigns')
  .then(r=>r.json())
  .then(d=> setCampaigns(Array.isArray(d)?d: d.campaigns||d.data||[]))
  .catch(()=>{});
@@ -87,15 +87,34 @@ export default function HomeFeed({ onSelectCampaign }) {
         </div>
       </div>
 
-      <div style={{maxWidth:'1120px', margin:'0 auto', padding: isMobile? '10px 10px 80px' : '18px 24px 80px'}}>
+      <div style={{maxWidth:'1120px', margin:'0 auto', padding: isMobile? '14px 12px 80px' : '22px 24px 80px'}}>
 
-        <div style={{ display:'grid', gridTemplateColumns: isMobile? 'repeat(4, 1fr)' : 'repeat(6, 1fr)', gap: isMobile? '7px' : '12px', marginBottom:'14px' }}>
+        {/* FIXED: Bigger tiles - PC 4x3, Mobile 3x4, fills viewport */}
+        <div style={{ 
+          display:'grid', 
+          gridTemplateColumns: isMobile? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', 
+          gap: isMobile? '10px' : '16px', 
+          marginBottom:'18px' 
+        }}>
           {CATEGORIES.map(cat=>{
             const active = activeCat===cat.id;
             return (
-              <button key={cat.id} onClick={()=>setActiveCat(cat.id)} style={{ background: active? '#0BA469' : '#ffffff', border:'none', borderRadius:'12px', padding:'8px 3px 6px', minHeight:'62px', cursor:'pointer', boxShadow: active? '0 6px 14px rgba(11,164,105,0.25)' : '0 3px 10px rgba(0,0,0,0.05)' }}>
-                {cat.dots? <div style={{display:'grid', gridTemplateColumns:'repeat(3, 5px)', gap:'3px', justifyContent:'center', marginBottom:'5px'}}>{Array.from({length:9}).map((_,i)=><div key={i} style={{width:'5px', height:'5px', borderRadius:'50%', background: active? 'white' : '#111827'}}/>)}</div> : <div style={{fontSize:'16px', marginBottom:'3px'}}>{cat.icon}</div>}
-                <div style={{fontSize:'8px', fontWeight:'700', color: active? 'white' : 'black', lineHeight:'1.1'}}>{cat.label}</div>
+              <button key={cat.id} onClick={()=>setActiveCat(cat.id)} style={{ 
+                background: active? '#0BA469' : '#ffffff', 
+                border: active? '1px solid #0BA469' : '1px solid #eef2f7',
+                borderRadius: isMobile? '14px' : '18px', 
+                padding: isMobile? '14px 6px 12px' : '20px 10px 16px', 
+                minHeight: isMobile? '96px' : '126px',
+                cursor:'pointer', 
+                boxShadow: active? '0 6px 18px rgba(11,164,105,0.28)' : '0 3px 12px rgba(0,0,0,0.05)',
+                display:'flex',
+                flexDirection:'column',
+                alignItems:'center',
+                justifyContent:'center',
+                transition:'all 0.15s ease'
+              }}>
+                {cat.dots? <div style={{display:'grid', gridTemplateColumns:'repeat(3, 6px)', gap:'4px', justifyContent:'center', marginBottom: isMobile? '8px' : '10px'}}>{Array.from({length:9}).map((_,i)=><div key={i} style={{width:'6px', height:'6px', borderRadius:'50%', background: active? 'white' : '#111827'}}/>)}</div> : <div style={{fontSize: isMobile? '26px' : '32px', marginBottom: isMobile? '6px' : '8px', lineHeight:1}}>{cat.icon}</div>}
+                <div style={{fontSize: isMobile? '11px' : '12.5px', fontWeight:'800', color: active? 'white' : '#111827', lineHeight:'1.15', textAlign:'center', letterSpacing:'-0.1px'}}>{cat.label}</div>
               </button>
             )
           })}
@@ -163,7 +182,6 @@ export default function HomeFeed({ onSelectCampaign }) {
                     <span style={{display:'flex', alignItems:'center', gap:'4px'}}>⏳ {daysLeft}d left</span>
                   </div>
 
-                  {/* FINAL: Buttons combined width = Wakiso line, same on PC & Mobile */}
                   <div style={{marginTop:'6px', width:'100%', maxWidth: isMobile? '100%' : '380px'}}>
                     <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
                       <button style={{
@@ -186,7 +204,7 @@ export default function HomeFeed({ onSelectCampaign }) {
                       <button onClick={(e)=>{e.stopPropagation(); if(navigator.share){navigator.share({title:c.title, text:c.description, url: window.location.href})}}}
                         style={{
                           background:'#f8fafc',
-                          border:'1px solid #e2e8f0',
+                          border:'1px solid #e2e0f0',
                           borderRadius:'10px',
                           padding:'11px 16px',
                           fontWeight:'700',
@@ -217,3 +235,4 @@ export default function HomeFeed({ onSelectCampaign }) {
     </div>
   );
 }
+
