@@ -50,8 +50,6 @@ export default function App() {
     const savedName = localStorage.getItem('userName');
     const savedRole = localStorage.getItem('userRole');
     if (savedEmail && savedName) setCurrentUser({ email: savedEmail, fullName: savedName, role: savedRole });
-    
-    // Staff tokens - independent of main login
     const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('authToken');
     try {
       const del = JSON.parse(localStorage.getItem('delegate') || 'null');
@@ -75,13 +73,6 @@ export default function App() {
     setCurrentUser(null);
     setStaffInfo({ hasOwnerToken: false, delegate: null });
     navigate('/');
-  };
-  const handleStaffLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('ownerToken');
-    localStorage.removeItem('delegate');
-    localStorage.removeItem('authToken');
-    setStaffInfo({ hasOwnerToken: false, delegate: null });
   };
 
   const handleDashboardClick = () => {
@@ -160,8 +151,15 @@ export default function App() {
               <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Dashboard</button>
               <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>FAQ</button>
 
-              {/* STAFF ACCESS - ALWAYS VISIBLE ON MOBILE - Based on your actual Admin/Delegate files */}
-              <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+              {/* USER ACTIONS */}
+              <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Sign In (User)</button>}
+                {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Logout User ({currentUser.fullName?.split(' ')[0]})</button>}
+                <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', background: '#0f4d3a', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800 }}>Start a Fundraiser</button>
+              </div>
+
+              {/* STAFF ACCESS - MOVED BELOW START FUNDRAISER - CLEANED UP */}
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
                 <div style={{ fontSize:'11px', fontWeight:800, color:'#9ca3af', letterSpacing:'0.8px', marginBottom:'10px' }}>STAFF ACCESS</div>
                 
                 <button onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} style={{ display: 'flex', alignItems:'center', justifyContent:'space-between', width: '100%', textAlign: 'left', padding: '12px 12px', border: staffInfo.hasOwnerToken ? '1px solid #fca5a5' : '1px solid #e5e7eb', background: staffInfo.hasOwnerToken ? '#fef2f2' : 'white', borderRadius:'12px', fontWeight: 700, fontSize:'14px', color: staffInfo.hasOwnerToken ? '#991b1b' : '#111827', marginBottom:'8px' }}>
@@ -173,21 +171,6 @@ export default function App() {
                   <span>🤝 Delegate Dashboard</span>
                   {staffInfo.delegate && <span style={{fontSize:'10px', background:'#16a34a', color:'white', padding:'2px 8px', borderRadius:'999px'}}>{staffInfo.delegate.name?.split(' ')[0] || 'IN'}</span>}
                 </button>
-
-                <button onClick={() => { navigate('/delegate-login'); setIsMenuOpen(false); }} style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '12px 12px', border: '1px dashed #d1d5db', background: '#f9fafb', borderRadius:'12px', fontWeight: 600, fontSize:'13px', color:'#6b7280', marginBottom:'8px' }}>
-                  🔑 Delegate Login (Evelyn & team)
-                </button>
-
-                {(staffInfo.hasOwnerToken || staffInfo.delegate) && (
-                  <button onClick={() => { handleStaffLogout(); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '8px', border: 'none', background: 'none', fontWeight: 600, fontSize:'12px', color:'#dc2626' }}>Clear Staff Login</button>
-                )}
-                <div style={{fontSize:'10px', color:'#9ca3af', marginTop:'6px', lineHeight:'1.4'}}>Admin uses owner token (askkin.client@gmail.com). Delegate uses permanent token until owner revokes. Visible to everyone on mobile as you requested.</div>
-              </div>
-
-              <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Sign In (User)</button>}
-                {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Logout User ({currentUser.fullName?.split(' ')[0]})</button>}
-                <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', background: '#0f4d3a', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800 }}>Start a Fundraiser</button>
               </div>
 
               <div style={{ marginTop: 20, display: 'flex', gap: 16, justifyContent: 'center', fontSize: '12px' }}>
