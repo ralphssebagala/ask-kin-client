@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
+
 const PROVIDERS = ["MTN","Airtel","M-Pesa (Safaricom / Vodacom)","Orange Money","Tigo Pesa","Wave","Other"];
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -13,7 +15,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     provider: 'MTN', providerOther: '',
     idType: 'National ID', idNumber: '',
     nameMatches: false,
-    agreed: false, // Play Store compliance
+    agreed: false,
   });
 
   if (!isOpen) return null;
@@ -46,7 +48,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       if (idFile) fd.append('idDocument', idFile);
       if (selfieFile) fd.append('selfie', selfieFile);
 
-      const url = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+      // FIXED: Use API from env, not hardcoded localhost
+      const url = isLogin ? `${API}/api/auth/login` : `${API}/api/auth/register`;
       const isFormData = !isLogin;
       const res = await fetch(url, {
         method:'POST',
@@ -57,7 +60,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       if (!res.ok) throw new Error(data.message || data.error || 'Failed');
       
       alert(isLogin ? 'Login success!' : 'Account created! Verification pending. You will be notified once approved.');
-      onAuthSuccess && onAuthSuccess(data.user || { fullName: form.fullName, email: form.email });
+      onAuthSuccess && onAuthSuccess(data.user || { fullName: form.fullName, email: form.email, role: data.user?.role });
     } catch (err) {
       alert(err.message);
     } finally {
@@ -123,7 +126,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <span>My full name matches my <b>Mobile Money name</b> and ID (required for payout)</span>
               </label>
 
-              {/* PLAY STORE COMPLIANCE - Minimal Permissible */}
               <label style={{ display:'flex', gap:'8px', fontSize:'11px', marginBottom:'10px', alignItems:'flex-start', background:'#f0fdf4', border:'1px solid #bbf7d0', padding:'8px', borderRadius:'8px' }}>
                 <input type="checkbox" checked={form.agreed} onChange={e=>setForm({...form, agreed:e.target.checked})} required style={{marginTop:'2px', accentColor:'#065f46'}} />
                 <span style={{ lineHeight:'15px' }}>

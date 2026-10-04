@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import TeamChat from './TeamChat.jsx';
 import SupportInbox from '../components/SupportInbox.jsx';
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 export default function DelegateDashboard(){
   const [light, setLight] = useState(null);
   const [cards, setCards] = useState([]);
   const [kyc, setKyc] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('kyc'); // ADDED TAB STATE
+  const [tab, setTab] = useState('kyc');
   const navigate = useNavigate();
   
   const token = localStorage.getItem('token');
@@ -94,7 +94,6 @@ export default function DelegateDashboard(){
 
   return (
     <div style={{minHeight:'100vh', background:'#fbfaf7', fontFamily:'Inter, system-ui, sans-serif'}}>
-      {/* Ask Kin Header Bar */}
       <div style={{background:'white', borderBottom:'1px solid #f1f5f9', padding:'14px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, zIndex:10}}>
         <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
           <img src="/logo.png" alt="Ask Kin" style={{width:'36px', height:'36px', borderRadius:'10px', objectFit:'contain'}} />
@@ -109,8 +108,6 @@ export default function DelegateDashboard(){
       </div>
 
       <div style={{maxWidth:'900px', margin:'0 auto', padding:'20px 16px 40px'}}>
-        
-        {/* Welcome Pill */}
         <div style={{display:'flex', justifyContent:'center', marginBottom:'16px'}}>
           <div style={{background:'black', color:'white', padding:'8px 16px', borderRadius:'999px', fontSize:'12px', fontWeight:'600', display:'flex', alignItems:'center', gap:'8px'}}>
             <span style={{width:'8px', height:'8px', background:'#22c55e', borderRadius:'999px', display:'inline-block'}}></span>
@@ -118,7 +115,6 @@ export default function DelegateDashboard(){
           </div>
         </div>
 
-        {/* Traffic Light - GREEN */}
         <div style={{
           background: light?.light==='green' ? '#16a34a' : light?.light==='yellow' ? '#facc15' : light?.light==='red' ? '#dc2626' : '#16a34a',
           color: light?.light==='yellow' ? 'black' : 'white',
@@ -139,24 +135,14 @@ export default function DelegateDashboard(){
               <p style={{fontSize:'13px', opacity:0.9, marginTop:'2px'}}>{light?.message || 'All systems operational - Ready for Monday payout'}</p>
             </div>
           </div>
-          {light?.light==='red' && <a href="#" style={{background:'white', color:'#dc2626', padding:'10px 18px', borderRadius:'999px', fontSize:'13px', fontWeight:'800', textDecoration:'none'}}>📞 Call Ralph</a>}
+          <button onClick={loadHealth} style={{background:'rgba(255,255,255,0.2)', border:'none', padding:'8px 14px', borderRadius:'999px', color:'white', fontWeight:'700', fontSize:'11px', cursor:'pointer'}}>Refresh</button>
         </div>
 
-        {/* TAB SWITCHER - ADDED SUPPORT TAB */}
-        <div style={{display:'flex', justifyContent:'center', marginBottom:'20px'}}>
-          <div style={{display:'flex', gap:'6px', background:'#efede8', padding:'6px', borderRadius:'999px'}}>
-            {[
-              {id:'kyc', label:'KYC Queue', icon:'🪪'},
-              {id:'support', label:'Support', icon:'💬'},
-            ].map(t=>(
-              <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px', borderRadius:'999px', fontSize:'13px', fontWeight:'600', border:'none', cursor:'pointer', background: tab===t.id?'black':'transparent', color: tab===t.id?'white':'#6b7280'}}>
-                {t.icon} {t.label} {t.id==='kyc' && kyc.length>0 ? `(${kyc.length})` : ''}
-              </button>
-            ))}
-          </div>
+        <div style={{display:'flex', gap:'8px', marginBottom:'16px'}}>
+          <button onClick={()=>setTab('kyc')} style={{padding:'10px 18px', borderRadius:'999px', border:'none', background: tab==='kyc' ? 'black' : 'white', color: tab==='kyc' ? 'white' : '#111827', fontWeight:'700', fontSize:'13px', cursor:'pointer', borderWidth:'1px', borderStyle:'solid', borderColor:'#e5e7eb'}}>🪪 KYC</button>
+          <button onClick={()=>setTab('support')} style={{padding:'10px 18px', borderRadius:'999px', border:'none', background: tab==='support' ? 'black' : 'white', color: tab==='support' ? 'white' : '#111827', fontWeight:'700', fontSize:'13px', cursor:'pointer', borderWidth:'1px', borderStyle:'solid', borderColor:'#e5e7eb'}}>💬 Support</button>
         </div>
 
-        {/* 4 Cards - Only show on KYC tab */}
         {tab==='kyc' && (
           <>
             <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:'12px', marginBottom:'20px'}}>
@@ -176,7 +162,6 @@ export default function DelegateDashboard(){
               })}
             </div>
 
-            {/* KYC - Big Buttons */}
             <div style={{background:'white', borderRadius:'24px', padding:'22px', border:'1px solid #f0f0f0', boxShadow:'0 8px 30px rgba(0,0,0,0.04)'}}>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
                 <h2 style={{fontWeight:'800', fontSize:'16px', display:'flex', alignItems:'center', gap:'8px'}}>
@@ -218,7 +203,6 @@ export default function DelegateDashboard(){
               <p style={{fontSize:'10px', color:'#9ca3af', marginTop:'16px', textAlign:'center'}}>You CANNOT delete donations, change fees, or add delegates. All actions logged. Permanent until owner revokes.</p>
             </div>
 
-            {/* Permissions */}
             <div style={{marginTop:'16px', background:'#111827', borderRadius:'20px', padding:'18px', display:'flex', gap:'16px'}}>
               <div style={{flex:1}}>
                 <p style={{fontSize:'11px', fontWeight:'800', color:'#22c55e', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px'}}>✅ You Can</p>
@@ -233,7 +217,6 @@ export default function DelegateDashboard(){
           </>
         )}
 
-        {/* SUPPORT TAB - HUMAN INBOX */}
         {tab==='support' && (
           <div>
             <div style={{marginBottom:'12px'}}>
@@ -250,3 +233,4 @@ export default function DelegateDashboard(){
     </div>
   );
 }
+

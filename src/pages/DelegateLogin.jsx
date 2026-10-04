@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLoginButton } from '../components/GoogleLoginButton.jsx'
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 export default function DelegateLogin(){
   const [email, setEmail] = useState('amongieeve@gmail.com');
@@ -24,7 +24,6 @@ export default function DelegateLogin(){
       const j = await r.json();
       if(!r.ok) throw new Error(j.error || 'Login failed');
       
-      // Save token as 'token' - same key DelegateDashboard uses
       localStorage.setItem('token', j.token);
       localStorage.setItem('delegate', JSON.stringify(j.delegate));
       
@@ -85,3 +84,4 @@ export default function DelegateLogin(){
     </div>
   );
 }
+

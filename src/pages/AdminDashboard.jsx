@@ -4,7 +4,7 @@ import TeamChat from './TeamChat.jsx';
 import { GoogleLoginButton } from '../components/GoogleLoginButton.jsx' 
 import SupportInbox from '../components/SupportInbox.jsx';
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 export default function AdminDashboard(){
   const [health, setHealth] = useState(null);
@@ -69,54 +69,52 @@ export default function AdminDashboard(){
           <div style={{padding:'4px 10px', borderRadius:'999px', fontSize:'10px', fontWeight:'800', background: ok?'#dcfce7':'#fef3c7', color: ok?'#16a34a':'#d97706'}}>{ok?'ACTIVE':'ATTENTION'}</div>
         </div>
         <h3 style={{fontWeight:'700', fontSize:'15px'}}>{label}</h3>
-        <p style={{fontSize:'13px', color:'#666', marginTop:'4px'}}>{data?.message||'loading...'}</p>
+        <p style={{fontSize:'12px', color:'#888', marginTop:'4px'}}>{data?.message || (ok?'All good':'Check needed')}</p>
       </div>
     );
   };
 
   return (
-    <div style={{minHeight:'100vh', background:'#fbfaf7'}}>
-      <div style={{maxWidth:'1100px', margin:'0 auto', padding:'32px 24px'}}>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-          <h1 style={{fontSize:'24px', fontWeight:'800'}}>Ask Kin — Backend • Owner</h1>
-          <button onClick={handleOwnerLogout} style={{fontSize:'12px', padding:'6px 14px', borderRadius:'999px', border:'1px solid #eee', background:'white', cursor:'pointer'}}>Logout</button>
-        </div>
-        <TrafficLight />
-        {/* TABS - ADDED SUPPORT TAB HERE */}
-        <div style={{display:'flex', justifyContent:'center', margin:'20px 0'}}>
-          <div style={{display:'flex', gap:'6px', background:'#efede8', padding:'6px', borderRadius:'999px', flexWrap:'wrap'}}>
-            {[
-              {id:'kyc', label:'KYC Queue', icon:'🪪'},
-              {id:'support', label:'Support', icon:'💬'},
-              {id:'delegates', label:'Delegates', icon:'👥'},
-              {id:'health', label:'Health', icon:'🟢'},
-              {id:'overview', label:'Overview', icon:'📊'}
-            ].map(t=>(
-              <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px', borderRadius:'999px', fontSize:'13px', fontWeight:'600', border:'none', cursor:'pointer', background: tab===t.id?'black':'transparent', color: tab===t.id?'white':'#6b7280'}}>{t.icon} {t.label} {t.id==='kyc' && kycList.length>0 ? `(${kycList.length})` : ''}</button>
-            ))}
+    <div style={{minHeight:'100vh', background:'#fbfaf7', fontFamily:'Inter, system-ui, sans-serif'}}>
+      <div style={{background:'white', borderBottom:'1px solid #f1f5f9', padding:'14px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, zIndex:10}}>
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+          <img src="/logo.png" alt="Ask Kin" style={{width:'36px', height:'36px', borderRadius:'10px', objectFit:'contain'}} />
+          <div>
+            <p style={{fontSize:'14px', fontWeight:'800', color:'#0f4d3a', lineHeight:'1'}}>Ask Kin</p>
+            <p style={{fontSize:'11px', color:'#6b7280'}}>Owner Dashboard</p>
           </div>
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+          <span style={{fontSize:'11px', background:'#dcfce7', padding:'6px 10px', borderRadius:'999px', fontWeight:'700', color:'#16a34a'}}>OWNER</span>
+          <button onClick={handleOwnerLogout} style={{fontSize:'12px', padding:'8px 14px', borderRadius:'999px', border:'1px solid #e5e7eb', background:'white', fontWeight:'600', cursor:'pointer'}}>Logout</button>
+        </div>
+      </div>
+
+      <div style={{maxWidth:'1200px', margin:'0 auto', padding:'20px 16px 40px'}}>
+        {health && <TrafficLight health={health} />}
+
+        <div style={{display:'flex', gap:'8px', margin:'20px 0'}}>
+          {['kyc','support','health','delegates','overview'].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{padding:'10px 18px', borderRadius:'999px', border:'1px solid #e5e7eb', background: tab===t?'black':'white', color: tab===t?'white':'#111827', fontWeight:'700', fontSize:'12px', textTransform:'uppercase', letterSpacing:'0.5px', cursor:'pointer'}}>{t}</button>
+          ))}
         </div>
 
         {tab==='kyc' && (
-          <div>
+          <div style={{background:'white', borderRadius:'24px', padding:'24px', border:'1px solid #f0f0f0'}}>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
-              <h2 style={{fontWeight:'800', fontSize:'18px'}}>Manual KYC Queue — Verify by Eyes 👀</h2>
-              <button onClick={loadKyc} style={{padding:'8px 14px', borderRadius:'999px', border:'1px solid #eee', background:'white', fontSize:'12px', cursor:'pointer'}}>{kycLoading?'Loading...':'Refresh'}</button>
+              <h2 style={{fontWeight:'800', fontSize:'16px'}}>{kycList.length} KYC Pending</h2>
+              <button onClick={loadKyc} style={{fontSize:'11px', background:'black', color:'white', padding:'8px 14px', borderRadius:'999px', border:'none', fontWeight:'700', cursor:'pointer'}}>Refresh</button>
             </div>
-            {kycList.length===0 && <div style={{background:'white', borderRadius:'16px', padding:'32px', textAlign:'center', color:'#888'}}>No pending KYC. All clear ✅</div>}
-            <div style={{display:'grid', gap:'16px'}}>
-              {kycList.map(k=>(
-                <div key={k.ID || k.id} style={{background:'white', borderRadius:'20px', padding:'20px', border:'1px solid #f0f0f0', display:'grid', gridTemplateColumns:'1fr 1fr 260px', gap:'16px'}}>
-                  <div>
-                    <p style={{fontSize:'11px', fontWeight:'800', color:'#888', marginBottom:'8px'}}>ID DOCUMENT</p>
-                    {k.ID_DOC_PATH || k.idDocPath ? <img src={`${API}${k.ID_DOC_PATH || k.idDocPath}`} alt="ID" style={{width:'100%', maxHeight:'220px', objectFit:'contain', borderRadius:'12px', border:'1px solid #eee'}} /> : <div style={{background:'#f9f8f5', padding:'20px', borderRadius:'12px', textAlign:'center', fontSize:'12px', color:'#888'}}>No ID image</div>}
-                  </div>
-                  <div>
-                    <p style={{fontSize:'11px', fontWeight:'800', color:'#888', marginBottom:'8px'}}>SELFIE HOLDING ID</p>
-                    {k.SELFIE_PATH || k.selfiePath ? <img src={`${API}${k.SELFIE_PATH || k.selfiePath}`} alt="Selfie" style={{width:'100%', maxHeight:'220px', objectFit:'contain', borderRadius:'12px', border:'1px solid #eee'}} /> : <div style={{background:'#f9f8f5', padding:'20px', borderRadius:'12px', textAlign:'center', fontSize:'12px', color:'#888'}}>No selfie</div>}
-                  </div>
-                  <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                    <div style={{background:'#f9f8f5', borderRadius:'12px', padding:'12px'}}>
+            {kycLoading ? <p style={{textAlign:'center', color:'#9ca3af', fontSize:'13px', padding:'20px'}}>Loading...</p> : kycList.length===0 ? (
+              <div style={{textAlign:'center', padding:'28px', background:'#f0fdf4', borderRadius:'16px', border:'1px dashed #bbf7d0'}}>
+                <p style={{fontSize:'32px'}}>✅</p><p style={{fontWeight:'700', color:'#16a34a', marginTop:'8px'}}>All clear!</p>
+              </div>
+            ) : (
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'16px'}}>
+                {kycList.map(k=>(
+                  <div key={k.ID || k.id} style={{border:'1px solid #f0f0f0', borderRadius:'20px', padding:'16px', background:'#fbfaf7'}}>
+                    <div style={{width:'48px', height:'48px', borderRadius:'999px', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', fontWeight:'800'}}>👤</div>
+                    <div style={{marginTop:'12px'}}>
                       <p style={{fontWeight:'700', fontSize:'14px'}}>{k.FULL_NAME || k.fullName || k.NAME}</p>
                       <p style={{fontSize:'12px', color:'#666', marginTop:'4px'}}>{k.EMAIL || k.email}</p>
                       <div style={{marginTop:'10px', fontSize:'12px', lineHeight:'1.6'}}>
@@ -125,18 +123,17 @@ export default function AdminDashboard(){
                         <div><b>ID:</b> {k.ID_TYPE || k.idType} - {k.ID_NUMBER || k.idNumber}</div>
                       </div>
                     </div>
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginTop:'12px'}}>
                       <button onClick={()=>kycAction(k.ID || k.id, 'approve')} style={{background:'#16a34a', color:'white', border:'none', padding:'12px', borderRadius:'999px', fontWeight:'800', fontSize:'13px', cursor:'pointer'}}>✅ Approve</button>
                       <button onClick={()=>kycAction(k.ID || k.id, 'reject')} style={{background:'#fef2f2', color:'#dc2626', border:'1px solid #fecaca', padding:'12px', borderRadius:'999px', fontWeight:'800', fontSize:'13px', cursor:'pointer'}}>❌ Reject</button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* SUPPORT TAB CONTENT - ADDED HERE - HUMAN INBOX */}
         {tab==='support' && (
           <div>
             <div style={{marginBottom:'16px'}}>
@@ -196,3 +193,4 @@ export default function AdminDashboard(){
     </div>
   );
 }
+
