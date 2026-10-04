@@ -58,11 +58,21 @@ export default function App() {
     if (user.email) localStorage.setItem('userEmail', user.email);
     if (user.fullName) localStorage.setItem('userName', user.fullName);
     if (user.role) localStorage.setItem('userRole', user.role);
+    // After login, go to dashboard if user clicked dashboard before
+    navigate('/dashboard');
   };
   const handleLogout = () => {
     localStorage.clear();
     setCurrentUser(null);
     navigate('/');
+  };
+
+  const handleDashboardClick = () => {
+    if (currentUser) {
+      navigate('/dashboard');
+    } else {
+      setIsAuthOpen(true);
+    }
   };
 
   return (
@@ -95,7 +105,7 @@ export default function App() {
           <nav className="ak-nav">
             <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/')? '#0f4d3a' : '#111827' }}>Explore Our Fundraisers</button>
             <button onClick={() => navigate('/assistant')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/assistant')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/assistant')? '#0f4d3a' : '#111827' }}>Ask Kin Assistant</button>
-            <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/dashboard')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/dashboard')? '#0f4d3a' : '#111827' }}>Dashboard</button>
+            <button onClick={handleDashboardClick} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/dashboard')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/dashboard')? '#0f4d3a' : '#111827' }}>Dashboard</button>
             <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/faq')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/faq')? '#0f4d3a' : '#111827' }}>FAQ</button>
           </nav>
 
@@ -126,7 +136,7 @@ export default function App() {
               </div>
               <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Explore Our Fundraisers</button>
               <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Ask Kin Assistant</button>
-              <button onClick={() => { navigate('/dashboard'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Dashboard</button>
+              <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Dashboard</button>
               <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>FAQ</button>
               <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Sign In</button>}

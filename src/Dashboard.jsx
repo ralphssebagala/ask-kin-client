@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-// REMOVED SupportContact - moved to public FAQ page
 
 export default function Dashboard({ user, userCampaigns = [], userDonations = [] }) {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
-  // Resolve user from props OR localStorage (for direct navigation)
   const currentUser = useMemo(() => {
     if (user && user.email) return user;
     try {
+      const email = localStorage.getItem('userEmail');
+      const name = localStorage.getItem('userName');
+      const role = localStorage.getItem('userRole');
+      if (email && name) return { email, fullName: name, name, role };
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       return stored.email ? stored : null;
     } catch { return null; }
@@ -20,12 +22,6 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
   const isApproved = kycStatus === 'approved' || kycStatus === 'verified';
   const isPending = kycStatus === 'pending' || !kycStatus;
   const isRejected = kycStatus === 'rejected';
-
-  useEffect(() => {
-    if (!currentUser) {
-      navigate('/');
-    }
-  }, [currentUser, navigate]);
 
   const sorted = useMemo(()=> [...(userCampaigns||[])].sort((a,b)=>{
     const da = new Date(a?.createdAt || a?.date || 0);
@@ -52,13 +48,13 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
   const handleDelete = async (camp) => {
     const raised = Number(camp.raised || 0);
     if(raised > 0){
-      setToast('⚠️ Cannot delete - this campaign has donations. Use Close instead to archive it.');
+      setToast('⚠️ Cannot delete - has donations. Use Close instead.');
       return;
     }
     const id = camp._id || camp.id;
-    if(!window.confirm(`Delete "${camp.title}" permanently? This cannot be undone.`)) return;
+    if(!window.confirm(`Delete "${camp.title}" permanently?`)) return;
     try{
-      const res = await fetch(`http://localhost:5000/api/campaigns/${id}`, { method:'DELETE' });
+      const res = await fetch(`https://api.ask-kin.com/api/campaigns/${id}`, { method:'DELETE' });
       if(!res.ok) throw new Error('Delete failed');
       setCampaigns(prev => prev.filter(c => (c._id||c.id)!== id));
       setToast('🗑️ Campaign deleted');
@@ -69,9 +65,9 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
 
   const handleClose = async (camp) => {
     const id = camp._id || camp.id;
-    if(!window.confirm(`Close "${camp.title}"? It will be archived and hidden from public, but donation history will remain.`)) return;
+    if(!window.confirm(`Close "${camp.title}"? It will be archived.`)) return;
     try{
-      const res = await fetch(`http://localhost:5000/api/campaigns/${id}`, {
+      const res = await fetch(`https://api.ask-kin.com/api/campaigns/${id}`, {
         method:'PUT',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ isArchived: true, status: 'closed' })
@@ -92,18 +88,21 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
     navigate('/create-campaign');
   };
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div style={{maxWidth:'560px', margin:'0 auto', padding:'60px 20px', textAlign:'center'}}>
+        <div style={{background:'white', border:'1px solid #eef2f7', borderRadius:'20px', padding:'32px'}}>
+          <div style={{fontSize:'40px', marginBottom:'12px'}}>🔒</div>
+          <h2 style={{fontSize:'20px', fontWeight:'800', marginBottom:'8px'}}>Dashboard requires login</h2>
+          <p style={{color:'#6b7280', fontSize:'14px', marginBottom:'20px'}}>Sign in to see your campaigns, donations, and payouts.</p>
+          <button onClick={()=>navigate('/')} style={{background:'#0f4d3a', color:'white', border:'none', padding:'12px 22px', borderRadius:'999px', fontWeight:'700', cursor:'pointer'}}>Back to Home</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-    <style>{`
-      @media (max-width: 640px) {
-      .dash-ready { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
-      .dash-card { flex-direction: column!important; align-items: flex-start!important; gap:12px!important; }
-      .dash-card-actions { width:100%; justify-content:flex-end; flex-wrap:wrap; }
-      }
-    `}</style>
-
     <div style={{maxWidth:'840px', margin:'0 auto', padding:'24px 20px'}}>
       <div style={{textAlign:'center', marginBottom:'24px'}}>
         <h1 style={{fontSize:'32px', fontWeight:'800'}}>Welcome back, {currentUser?.name || currentUser?.fullName || 'Creator'}</h1>
@@ -115,14 +114,14 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
           <div style={{fontSize:'20px'}}>⏳</div>
           <div>
             <div style={{fontWeight:'700', fontSize:'14px', color:'#92400e'}}>Verification pending</div>
-            <div style={{fontSize:'13px', color:'#78350f', marginTop:'2px'}}>Your account is under review. You'll be notified once approved. Need help? Visit <a href="/faq" style={{textDecoration:'underline', fontWeight:600}}>FAQ → Support</a>.</div>
+            <div style={{fontSize:'13px', color:'#78350f', marginTop:'2px'}}>Your account is under review. You'll be notified once approved.</div>
           </div>
         </div>
       )}
       {isRejected && (
         <div style={{padding:'14px 18px', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'14px', marginBottom:'16px'}}>
           <div style={{fontWeight:'700', fontSize:'14px', color:'#991b1b'}}>Verification rejected</div>
-          <div style={{fontSize:'13px', color:'#7f1d1d', marginTop:'2px'}}>Please contact support via <a href="/faq" style={{textDecoration:'underline'}}>FAQ page</a> or re-upload clear documents.</div>
+          <div style={{fontSize:'13px', color:'#7f1d1d', marginTop:'2px'}}>Please contact support via <a href="/faq" style={{textDecoration:'underline'}}>FAQ page</a>.</div>
         </div>
       )}
       {isApproved && (
@@ -131,20 +130,9 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
         </div>
       )}
 
-      <div className="dash-ready" style={{padding:'20px 24px', background: isApproved ? '#ecfdf5' : '#f9fafb', border:`1px solid ${isApproved ? '#a7f3d0' : '#e5e7eb'}`, borderRadius:'20px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+      <div style={{padding:'20px 24px', background: isApproved ? '#ecfdf5' : '#f9fafb', border:`1px solid ${isApproved ? '#a7f3d0' : '#e5e7eb'}`, borderRadius:'20px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'12px'}}>
         <div><div style={{fontWeight:'700', color: isApproved ? '#064e3b' : '#6b7280'}}>Ready to launch?</div><div style={{fontSize:'14px', color: isApproved ? '#047857' : '#9ca3af'}}>{isApproved ? 'Start a new campaign.' : 'Verification required before creating.'}</div></div>
-        <button 
-          onClick={handleCreateClick} 
-          disabled={!isApproved}
-          style={{
-            background: isApproved ? '#0f4d3a' : '#9ca3af', 
-            color:'#fff', fontWeight:'700', padding:'12px 20px', borderRadius:'12px', border:'none', 
-            cursor: isApproved ? 'pointer' : 'not-allowed',
-            opacity: isApproved ? 1 : 0.7
-          }}
-        >
-          + Create New Campaign
-        </button>
+        <button onClick={handleCreateClick} disabled={!isApproved} style={{background: isApproved ? '#0f4d3a' : '#9ca3af', color:'#fff', fontWeight:'700', padding:'12px 20px', borderRadius:'12px', border:'none', cursor: isApproved ? 'pointer' : 'not-allowed', opacity: isApproved ? 1 : 0.7}}>+ Create New Campaign</button>
       </div>
 
       <div style={{display:'flex', gap:'24px', borderBottom:'1px solid #e5e7eb', marginTop:'32px', marginBottom:'20px'}}>
@@ -156,26 +144,21 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
         const raised = Number(c.raised||0);
         const isClosed = c.isArchived || c.status==='closed';
         return (
-        <div key={c._id||c.id} className="dash-card" style={{background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px', padding:'20px', marginBottom:'12px', display:'flex', justifyContent:'space-between', alignItems:'center', boxShadow:'0 1px 2px rgba(0,0,0,0.04)', opacity: isClosed?0.7:1}}>
+        <div key={c._id||c.id} style={{background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px', padding:'20px', marginBottom:'12px', display:'flex', justifyContent:'space-between', alignItems:'center', opacity: isClosed?0.7:1}}>
           <div style={{minWidth:0, flex:1}}>
             <div style={{fontWeight:'700', fontSize:'15px'}}>{c.title} {isClosed && <span style={{fontSize:'11px', background:'#f3f4f6', border:'1px solid #e5e7eb', padding:'2px 8px', borderRadius:'999px', marginLeft:'8px'}}>CLOSED</span>}</div>
             <div style={{fontSize:'13px', color:'#6b7280', marginTop:'6px'}}>Raised: <b style={{color:'#0f4d3a'}}>${raised}</b> of ${c.goal||0}</div>
           </div>
-          <div className="dash-card-actions" style={{display:'flex', gap:'8px', flexShrink:0}}>
+          <div style={{display:'flex', gap:'8px', flexShrink:0, flexWrap:'wrap'}}>
             <button onClick={()=>handleShare(c)} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #e5e7eb', background:'#f9fafb', cursor:'pointer'}}>Share Link</button>
             <button onClick={()=>navigate(`/edit-campaign/${c._id||c.id}`)} disabled={isClosed} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #a7f3d0', background: isClosed?'#f3f4f6':'#ecfdf5', color: isClosed?'#9ca3af':'#0f4d3a', cursor: isClosed?'not-allowed':'pointer', fontWeight:'600'}}>Edit</button>
-            {raised===0 &&!isClosed? (
-              <button onClick={()=>handleDelete(c)} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #fecaca', background:'#fef2f2', color:'#991b1b', cursor:'pointer', fontWeight:'600'}}>Delete</button>
-            ) :!isClosed && (
-              <button onClick={()=>handleClose(c)} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #e5e7eb', background:'#fff', color:'#6b7280', cursor:'pointer'}}>Close</button>
-            )}
+            {raised===0 &&!isClosed? (<button onClick={()=>handleDelete(c)} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #fecaca', background:'#fef2f2', color:'#991b1b', cursor:'pointer', fontWeight:'600'}}>Delete</button>) :!isClosed && (<button onClick={()=>handleClose(c)} style={{fontSize:'13px', padding:'8px 14px', borderRadius:'10px', border:'1px solid #e5e7eb', background:'#fff', color:'#6b7280', cursor:'pointer'}}>Close</button>)}
           </div>
         </div>
       )})}
 
       {activeTab==='campaigns' && campaigns.length===0 && <div style={{textAlign:'center', color:'#9ca3af', padding:'40px 0'}}>No campaigns yet</div>}
 
-      {/* SUPPORT REMOVED FROM DASHBOARD - Now public on FAQ page */}
       <div style={{marginTop:'40px', textAlign:'center', padding:'16px', background:'#f9fafb', border:'1px dashed #e5e7eb', borderRadius:'12px'}}>
         <div style={{fontSize:'13px', color:'#6b7280'}}>Need help? <a href="/faq" style={{color:'#0f4d3a', fontWeight:700, textDecoration:'none'}}>Contact support on FAQ page →</a></div>
       </div>
@@ -185,3 +168,4 @@ export default function Dashboard({ user, userCampaigns = [], userDonations = []
     </>
   );
 }
+
