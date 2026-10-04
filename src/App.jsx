@@ -39,6 +39,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userCampaigns, setUserCampaigns] = useState([]);
   const [userDonations, setUserDonations] = useState([]);
+  const [staffInfo, setStaffInfo] = useState({ hasOwnerToken: false, delegate: null });
 
   useEffect(() => {
     fetch('https://api.ask-kin.com/api/campaigns')
@@ -49,7 +50,16 @@ export default function App() {
     const savedName = localStorage.getItem('userName');
     const savedRole = localStorage.getItem('userRole');
     if (savedEmail && savedName) setCurrentUser({ email: savedEmail, fullName: savedName, role: savedRole });
-  }, []);
+    
+    // Staff tokens - independent of main login
+    const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('authToken');
+    try {
+      const del = JSON.parse(localStorage.getItem('delegate') || 'null');
+      setStaffInfo({ hasOwnerToken: !!token, delegate: del });
+    } catch {
+      setStaffInfo({ hasOwnerToken: !!token, delegate: null });
+    }
+  }, [location.pathname, isMenuOpen]);
 
   const active = (p) => location.pathname === p;
   const handleAuthSuccess = (user) => {
@@ -58,22 +68,30 @@ export default function App() {
     if (user.email) localStorage.setItem('userEmail', user.email);
     if (user.fullName) localStorage.setItem('userName', user.fullName);
     if (user.role) localStorage.setItem('userRole', user.role);
-    // After login, go to dashboard if user clicked dashboard before
     navigate('/dashboard');
   };
   const handleLogout = () => {
     localStorage.clear();
     setCurrentUser(null);
+    setStaffInfo({ hasOwnerToken: false, delegate: null });
     navigate('/');
+  };
+  const handleStaffLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('ownerToken');
+    localStorage.removeItem('delegate');
+    localStorage.removeItem('authToken');
+    setStaffInfo({ hasOwnerToken: false, delegate: null });
   };
 
   const handleDashboardClick = () => {
-    if (currentUser) {
-      navigate('/dashboard');
-    } else {
-      setIsAuthOpen(true);
-    }
+    if (currentUser) navigate('/dashboard');
+    else setIsAuthOpen(true);
   };
+
+  const roleLower = (currentUser?.role || '').toLowerCase();
+  const isAdminRole = roleLower.includes('admin') || staffInfo.hasOwnerToken;
+  const isDelegateRole = roleLower.includes('delegate') || !!staffInfo.delegate || isAdminRole;
 
   return (
     <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -89,7 +107,7 @@ export default function App() {
         .ak-header-inner{height:76px;padding:0 24px}
         .ak-logo img{width:66px;height:66px;border-radius:14px}
         .ak-logo span{font-size:22px}
-        .ak-nav{display:flex;gap:28px;align-items:center}
+        .ak-nav{display:flex;gap:20px;align-items:center}
         .ak-right{display:flex;gap:12px;align-items:center}
         .ak-hamburger{display:none}
         }
@@ -103,22 +121,24 @@ export default function App() {
           </div>
 
           <nav className="ak-nav">
-            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/')? '#0f4d3a' : '#111827' }}>Explore Our Fundraisers</button>
-            <button onClick={() => navigate('/assistant')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/assistant')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/assistant')? '#0f4d3a' : '#111827' }}>Ask Kin Assistant</button>
-            <button onClick={handleDashboardClick} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/dashboard')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/dashboard')? '#0f4d3a' : '#111827' }}>Dashboard</button>
-            <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/faq')? 800 : 600, fontSize:'14px', letterSpacing:'-0.1px', color: active('/faq')? '#0f4d3a' : '#111827' }}>FAQ</button>
+            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/')? 800 : 600, fontSize:'13px', color: active('/')? '#0f4d3a' : '#111827' }}>Explore</button>
+            <button onClick={() => navigate('/assistant')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/assistant')? 800 : 600, fontSize:'13px', color: active('/assistant')? '#0f4d3a' : '#111827' }}>Assistant</button>
+            <button onClick={handleDashboardClick} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/dashboard')? 800 : 600, fontSize:'13px', color: active('/dashboard')? '#0f4d3a' : '#111827' }}>Dashboard</button>
+            {isAdminRole && <button onClick={() => navigate('/admin')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/admin')? 800 : 600, fontSize:'13px', color: active('/admin')? '#0f4d3a' : '#b91c1c' }}>Admin</button>}
+            {isDelegateRole && <button onClick={() => navigate('/delegate')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/delegate')? 800 : 600, fontSize:'13px', color: active('/delegate')? '#0f4d3a' : '#065f46' }}>Delegate</button>}
+            <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: active('/faq')? 800 : 600, fontSize:'13px', color: active('/faq')? '#0f4d3a' : '#111827' }}>FAQ</button>
           </nav>
 
           <div className="ak-right">
             {currentUser? (
               <>
-                <span style={{ fontSize: '13px', fontWeight: 700 }}>Hi, {currentUser.fullName?.split(' ')[0]}</span>
-                <button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize:'13px', fontWeight:600 }}>Logout</button>
+                <span style={{ fontSize: '12px', fontWeight: 700 }}>Hi, {currentUser.fullName?.split(' ')[0]}</span>
+                <button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize:'12px', fontWeight:600 }}>Logout</button>
               </>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize:'14px' }}>Sign In</button>
+              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize:'13px' }}>Sign In</button>
             )}
-            <button onClick={() => currentUser? navigate('/create-campaign') : setIsAuthOpen(true)} style={{ background: '#0f4d3a', color: 'white', border: 'none', padding: '11px 20px', borderRadius: '999px', fontWeight: 800, cursor: 'pointer', fontSize:'14px', letterSpacing:'0.1px' }}>Start a Fundraiser</button>
+            <button onClick={() => currentUser? navigate('/create-campaign') : setIsAuthOpen(true)} style={{ background: '#0f4d3a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '999px', fontWeight: 800, cursor: 'pointer', fontSize:'13px' }}>Start a Fundraiser</button>
           </div>
 
           <button className="ak-hamburger" onClick={() => setIsMenuOpen(v =>!v)}>☰</button>
@@ -126,7 +146,7 @@ export default function App() {
 
         {isMenuOpen && (
           <div style={{ position: 'fixed', left: 0, right: 0, top: 60, bottom: 0, background: 'rgba(0,0,0,0.35)', zIndex: 50 }} onClick={() => setIsMenuOpen(false)}>
-            <div style={{ background: 'white', width: '82%', maxWidth: 320, height: '100%', padding: 20, overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ background: 'white', width: '84%', maxWidth: 340, height: '100%', padding: 20, overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src="/logo.png" alt="" style={{ width: 28, height: 28, borderRadius: 7 }} />
@@ -134,15 +154,42 @@ export default function App() {
                 </div>
                 <button onClick={() => setIsMenuOpen(false)} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: 999, cursor: 'pointer' }}>×</button>
               </div>
-              <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Explore Our Fundraisers</button>
+
+              <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Explore Fundraisers</button>
               <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Ask Kin Assistant</button>
               <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>Dashboard</button>
               <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 700, fontSize:'15px' }}>FAQ</button>
+
+              {/* STAFF ACCESS - ALWAYS VISIBLE ON MOBILE - Based on your actual Admin/Delegate files */}
+              <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize:'11px', fontWeight:800, color:'#9ca3af', letterSpacing:'0.8px', marginBottom:'10px' }}>STAFF ACCESS</div>
+                
+                <button onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} style={{ display: 'flex', alignItems:'center', justifyContent:'space-between', width: '100%', textAlign: 'left', padding: '12px 12px', border: staffInfo.hasOwnerToken ? '1px solid #fca5a5' : '1px solid #e5e7eb', background: staffInfo.hasOwnerToken ? '#fef2f2' : 'white', borderRadius:'12px', fontWeight: 700, fontSize:'14px', color: staffInfo.hasOwnerToken ? '#991b1b' : '#111827', marginBottom:'8px' }}>
+                  <span>🛡️ Admin Dashboard</span>
+                  {staffInfo.hasOwnerToken && <span style={{fontSize:'10px', background:'#dc2626', color:'white', padding:'2px 8px', borderRadius:'999px'}}>LOGGED IN</span>}
+                </button>
+
+                <button onClick={() => { navigate('/delegate'); setIsMenuOpen(false); }} style={{ display: 'flex', alignItems:'center', justifyContent:'space-between', width: '100%', textAlign: 'left', padding: '12px 12px', border: staffInfo.delegate ? '1px solid #86efac' : '1px solid #e5e7eb', background: staffInfo.delegate ? '#f0fdf4' : 'white', borderRadius:'12px', fontWeight: 700, fontSize:'14px', color: staffInfo.delegate ? '#065f46' : '#111827', marginBottom:'8px' }}>
+                  <span>🤝 Delegate Dashboard</span>
+                  {staffInfo.delegate && <span style={{fontSize:'10px', background:'#16a34a', color:'white', padding:'2px 8px', borderRadius:'999px'}}>{staffInfo.delegate.name?.split(' ')[0] || 'IN'}</span>}
+                </button>
+
+                <button onClick={() => { navigate('/delegate-login'); setIsMenuOpen(false); }} style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '12px 12px', border: '1px dashed #d1d5db', background: '#f9fafb', borderRadius:'12px', fontWeight: 600, fontSize:'13px', color:'#6b7280', marginBottom:'8px' }}>
+                  🔑 Delegate Login (Evelyn & team)
+                </button>
+
+                {(staffInfo.hasOwnerToken || staffInfo.delegate) && (
+                  <button onClick={() => { handleStaffLogout(); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '8px', border: 'none', background: 'none', fontWeight: 600, fontSize:'12px', color:'#dc2626' }}>Clear Staff Login</button>
+                )}
+                <div style={{fontSize:'10px', color:'#9ca3af', marginTop:'6px', lineHeight:'1.4'}}>Admin uses owner token (askkin.client@gmail.com). Delegate uses permanent token until owner revokes. Visible to everyone on mobile as you requested.</div>
+              </div>
+
               <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Sign In</button>}
-                {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Logout ({currentUser.fullName?.split(' ')[0]})</button>}
+                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Sign In (User)</button>}
+                {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 700, padding: '8px 0', fontSize:'15px' }}>Logout User ({currentUser.fullName?.split(' ')[0]})</button>}
                 <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', background: '#0f4d3a', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 800 }}>Start a Fundraiser</button>
               </div>
+
               <div style={{ marginTop: 20, display: 'flex', gap: 16, justifyContent: 'center', fontSize: '12px' }}>
                 <Link to="/privacy-policy" onClick={() => setIsMenuOpen(false)} style={{ color: '#065f46', fontWeight: 700 }}>Privacy</Link>
                 <Link to="/terms" onClick={() => setIsMenuOpen(false)} style={{ color: '#065f46', fontWeight: 700 }}>Terms</Link>
