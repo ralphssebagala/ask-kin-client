@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://api.ask-kin.com/api';
 export function GoogleProvider({ children }) { return children; }
 export function GoogleLoginButton() {
   const handleGoogle = () => { window.location.href = `${API_BASE}/auth/google`; };

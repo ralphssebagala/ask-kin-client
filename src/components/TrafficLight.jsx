@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 export default function TrafficLight() {
   const [light, setLight] = useState(null);

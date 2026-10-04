@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 // Human Support Inbox - for Admin & Delegate dashboards
 // Shows threads from FAQ Live Chat (NOT AI Assistant)

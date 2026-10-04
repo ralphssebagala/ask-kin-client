@@ -116,7 +116,7 @@ export default function CreateCampaign({ onSuccess }) {
         creatorEmail: currentUser?.email
       };
 
-      const res = await fetch('http://localhost:5000/api/campaigns', {
+      const res = await fetch('https://api.ask-kin.com/api/campaigns', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)

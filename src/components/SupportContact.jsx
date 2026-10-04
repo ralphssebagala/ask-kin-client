@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
 // PUBLIC Support - distinct from AI Assistant
 // FAQ page uses this - no login needed, no clutter (modal only on click)

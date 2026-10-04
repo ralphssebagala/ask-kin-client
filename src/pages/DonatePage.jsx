@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const COUNTRY_MAP = { UG: 'Uganda', UGANDA: 'Uganda', RW: 'Rwanda', KE: 'Kenya', TZ: 'Tanzania' };
 function normalizeCountry(raw){ if(!raw) return 'Uganda'; const u=raw.toString().trim().toUpperCase(); return COUNTRY_MAP[u]||raw; }
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL || 'https://api.ask-kin.com';
 
 export default function DonatePage({ campaign }){
   const navigate = useNavigate();

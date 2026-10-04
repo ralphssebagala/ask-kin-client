@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_BACKEND_URL || "https://api.ask-kin.com";
 
 export default function AskKinAssistant(){
   const [msgs,setMsgs]=useState([{from:'bot',text:'Hello! I am your Ask Kin Assistant. I can answer anything about fees, payouts, verification, donations, creating or managing campaigns. How can I help?'}]);

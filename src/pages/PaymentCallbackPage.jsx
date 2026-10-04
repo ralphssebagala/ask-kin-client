@@ -38,7 +38,7 @@ export default function PaymentCallbackPage() {
       return;
     }
 
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || 'https://api.ask-kin.com';
 
     const check = async (attempt = 0) => {
       try {
