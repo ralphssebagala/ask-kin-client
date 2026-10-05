@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
         <p className="mb-6">We use essential cookies for login/session and analytics cookies for performance. Manage in browser settings. Mobile app uses device storage for session token.</p>
 
         <h2 className="text-xl font-bold mt-10 mb-3">8. Children</h2>
-        <p className="mb-6">You must be <strong>18+</strong> to create an account and receive payouts. Campaigns for minors (<18) must be created and managed by parent/legal guardian with guardian ID. We do not knowingly collect data from children without guardian consent.</p>
+        <p className="mb-6">You must be <strong>18+</strong> to create an account and receive payouts. Campaigns for minors (under 18) must be created and managed by parent/legal guardian with guardian ID. We do not knowingly collect data from children without guardian consent.</p>
 
         <h2 className="text-xl font-bold mt-10 mb-3">9. International Transfers</h2>
         <p className="mb-6">Data may be processed in Uganda and other countries where our aggregator/banks operate (KE, TZ, RW, ZM) under standard contractual safeguards.</p>
