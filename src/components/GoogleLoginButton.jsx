@@ -1,14 +1,60 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://api.ask-kin.com/api';
-export function GoogleProvider({ children }) { return children; }
-export function GoogleLoginButton() {
-  const handleGoogle = () => { window.location.href = `${API_BASE}/auth/google`; };
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
+
+const GOOGLE_CLIENT_ID = '712171613624-fk3gotmff326fjdlpvcisb9k5hs5fo4b.apps.googleusercontent.com';
+const API_BASE = 'https://api.ask-kin.com/api';
+
+export function GoogleProvider({ children }) {
   return (
-    <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-      <button onClick={handleGoogle} style={{display:'flex',alignItems:'center',gap:'10px',background:'white',border:'1px solid #dadce0',padding:'10px 20px',borderRadius:'999px',fontSize:'14px',fontWeight:'500',cursor:'pointer'}}>
-        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="G" style={{ width: 18, height: 18 }} />
-        Continue with Google
-      </button>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      {children}
+    </GoogleOAuthProvider>
+  );
+}
+
+export function GoogleLoginButton() {
+  const navigate = useNavigate();
+
+  const handleSuccess = async (credentialResponse) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('ownerToken', data.token);
+        localStorage.setItem('delegateToken', data.token);
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('userRole', data.user.role);
+        
+        if (data.user.role === 'owner') navigate('/admin');
+        else if (data.user.role === 'delegate') navigate('/delegate');
+        else navigate('/dashboard');
+      } else {
+        alert('Google login failed: ' + data.message);
+      }
+    } catch (e) {
+      alert('Backend not reachable: ' + e.message);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <GoogleLogin
+        onSuccess={handleSuccess}
+        onError={() => alert('Google login failed')}
+        theme="outline"
+        size="large"
+        width="320"
+        shape="pill"
+        text="continue_with"
+      />
     </div>
   );
 }
 export default GoogleLoginButton;
+
