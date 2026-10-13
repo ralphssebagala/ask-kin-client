@@ -40,16 +40,25 @@ export default function App() {
   const [userCampaigns, setUserCampaigns] = useState([]);
   const [userDonations, setUserDonations] = useState([]);
   const [staffInfo, setStaffInfo] = useState({ hasOwnerToken: false, delegate: null });
-  // SURGICAL ADD: scroll + explore detection
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', onScroll, {passive:true});
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+  // lock body scroll when mobile menu open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMenuOpen]);
+
   const isExplore = location.pathname === '/' || location.pathname.includes('/explore');
   const glowIntensity = Math.min(scrollY / 200, 1);
-  const showGlow = !isExplore; // <-- AGREED: spare explore the glow
+  const showGlow = !isExplore;
 
   useEffect(() => {
     const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
@@ -68,14 +77,39 @@ export default function App() {
   const handleDashboardClick = () => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFBF5', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: '#FFFBF5', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes greenPulse { 0%,100%{opacity:0.8;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
         @keyframes greenFlow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .ak-header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,164,108,0.08);transition:all 0.5s}
+        /* FIXED HEADER: sticky + safe-area + always visible */
+        .ak-header{
+          position:sticky;
+          top:0;
+          top:env(safe-area-inset-top, 0px);
+          z-index:40;
+          background:rgba(255,255,255,0.92);
+          backdrop-filter:blur(12px);
+          -webkit-backdrop-filter:blur(12px);
+          border-bottom:1px solid rgba(11,164,108,0.08);
+          transition:all 0.3s;
+          /* prevent chrome toolbar from hiding it */
+          transform:translateZ(0);
+          will-change:transform;
+        }
         .ak-header.glow{box-shadow:0 1px 0 rgba(0,0,0,0.05), 0 8px 24px rgba(11,164,108,0.18), 0 0 0 1px rgba(11,164,108,0.08)}
         .ak-header.no-glow{box-shadow:0 6px 18px rgba(0,0,0,0.06);border-bottom:3px solid #0f4d3a}
-        .ak-header-inner{max-width:1440px;margin:0 auto;padding:0 16px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:0;position:relative}
+        .ak-header-inner{
+          max-width:1440px;
+          margin:0 auto;
+          padding:0 16px;
+          padding-top:env(safe-area-inset-top, 0px);
+          height:72px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:0;
+          position:relative
+        }
         .ak-logo{display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;width:160px}
         .ak-logo img{width:56px;height:56px;border-radius:12px;object-fit:contain}
         .ak-logo span{font-size:22px;font-weight:900;color:#0f4d3a}
@@ -86,8 +120,35 @@ export default function App() {
         .ak-nav-btn.active{background:#f0fdf4;color:#0f4d3a;font-weight:900}
         .ak-right{display:none;align-items:center;gap:12px;flex-shrink:0;width:auto;justify-content:flex-end;min-width:240px}
         .ak-hamburger{background:none;border:none;font-size:26px;cursor:pointer;font-weight:900;padding:6px}
+        /* MOBILE DRAWER FIX: use 100dvh not 100vh, safe-area */
+        .ak-mobile-overlay{
+          position:fixed;
+          inset:0;
+          z-index:50;
+          background:rgba(0,0,0,0.4);
+          height:100dvh;
+          height:100vh;
+          padding-top:env(safe-area-inset-top, 0px);
+        }
+        .ak-mobile-panel{
+          position:absolute;
+          right:0;
+          top:0;
+          bottom:0;
+          width:85%;
+          max-width:380px;
+          background:rgba(255,255,255,0.98);
+          backdrop-filter:blur(16px);
+          padding:20px;
+          padding-top:calc(20px + env(safe-area-inset-top, 0px));
+          overflow-y:auto;
+          border-left:1px solid rgba(11,164,108,0.1);
+          height:100dvh;
+          display:flex;
+          flex-direction:column;
+        }
         @media(min-width:1100px){
-          .ak-header-inner{height:88px;padding:0 28px}
+          .ak-header-inner{height:88px;padding:0 28px;padding-top:env(safe-area-inset-top, 0px)}
           .ak-logo{width:180px}
           .ak-logo img{width:68px;height:68px}
           .ak-logo span{font-size:24px}
@@ -101,36 +162,36 @@ export default function App() {
           .ak-center{display:flex;gap:0}
           .ak-nav-group{gap:8px}
           .ak-nav-btn{font-size:12px;max-width:90px}
-          .ak-center-spacer{min-width:20px;max-width:60px}
-          .ak-right{display:flex}
-          .ak-hamburger{display:none}
         }
       `}</style>
 
-      <header className={`ak-header ${showGlow ? 'glow' : 'no-glow'}`} style={showGlow ? {
-        boxShadow: `0 1px 0 rgba(0,0,0,0.05), 0 ${8 + glowIntensity*12}px ${24 + glowIntensity*32}px rgba(11,164,108,${0.12 + glowIntensity*0.25}), 0 0 0 1px rgba(11,164,108,${0.06 + glowIntensity*0.12})`,
-        borderBottom: `1px solid rgba(11,164,108,${0.08 + glowIntensity*0.15})`
-      } : {}}>
-        {/* GREEN GLOW ELEMENTS - ONLY WHEN NOT EXPLORE (agreed) */}
-        {showGlow && (
-          <>
-            <div style={{
-              position:'absolute', left:0, right:0, bottom:-48, height:64, pointerEvents:'none',
-              background:`linear-gradient(180deg, rgba(11,164,108,${0.15 + glowIntensity*0.35}) 0%, rgba(11,164,108,${(0.15 + glowIntensity*0.35)*0.6}) 25%, rgba(11,164,108,${(0.15 + glowIntensity*0.35)*0.25}) 50%, transparent 100%)`,
-              filter:`blur(${4 + glowIntensity*6}px)`,
-              animation:'greenPulse 3s ease-in-out infinite',
-              transformOrigin:'top'
-            }}/>
-            <div style={{
-              position:'absolute', left:0, right:0, bottom:-80, height:96, pointerEvents:'none', opacity:0.6,
-              background:`linear-gradient(90deg, transparent, rgba(11,164,108,${0.08 + glowIntensity*0.12}), transparent, rgba(52,211,153,${0.06 + glowIntensity*0.08}), transparent)`,
-              backgroundSize:'200% 100%',
-              animation:'greenFlow 4s ease-in-out infinite',
-              filter:'blur(8px)'
-            }}/>
-          </>
-        )}
+      {showGlow && (
+        <>
+          <div style={{
+            position:'fixed',
+            inset:0,
+            pointerEvents:'none',
+            zIndex:0,
+            opacity: 0.55 + glowIntensity*0.45,
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(11,164,108,0.18) 1px, transparent 0)',
+            backgroundSize:'24px 24px'
+          }}/>
+          <div style={{
+            position:'fixed',
+            bottom:0,
+            left:0,
+            right:0,
+            height:'55%',
+            pointerEvents:'none',
+            zIndex:0,
+            opacity: 0.22 + glowIntensity*0.18,
+            background: 'radial-gradient(120% 80% at 50% 100%, rgba(11,164,108,0.28) 0%, rgba(11,164,108,0.14) 18%, rgba(16,185,129,0.08) 34%, transparent 72%)',
+            filter:'blur(8px)'
+          }}/>
+        </>
+      )}
 
+      <header className={`ak-header ${showGlow?'glow':'no-glow'}`}>
         <div className="ak-header-inner">
           <div className="ak-logo" onClick={() => navigate('/')}>
             <img src="/logo.png" alt="Ask Kin" />
@@ -158,8 +219,8 @@ export default function App() {
         </div>
 
         {isMenuOpen && (
-          <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.4)' }} onClick={() => setIsMenuOpen(false)}>
-            <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'85%', maxWidth:'380px', background:'rgba(255,255,255,0.95)', backdropFilter:'blur(16px)', padding:'20px', overflowY:'auto', borderLeft:'1px solid rgba(11,164,108,0.1)' }} onClick={e=>e.stopPropagation()}>
+          <div className="ak-mobile-overlay" onClick={() => setIsMenuOpen(false)}>
+            <div className="ak-mobile-panel" onClick={e=>e.stopPropagation()}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
                 <span style={{fontWeight:900, fontSize:'18px', display:'flex', alignItems:'center', gap:8}}><span style={{width:8, height:8, background:'#0BA46C', borderRadius:'50%', display:'inline-block'}}/>Menu</span>
                 <button onClick={() => setIsMenuOpen(false)} style={{background:'none', border:'none', fontSize:'22px', cursor:'pointer'}}>✕</button>
@@ -168,7 +229,7 @@ export default function App() {
               <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 800, fontSize:'15px' }}>Ask Kin Assistant</button>
               <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 800, fontSize:'15px' }}>Dashboard</button>
               <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 0', border: 'none', background: 'none', fontWeight: 800, fontSize:'15px' }}>FAQ</button>
-              <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ marginTop: 24, borderTop: '1px solid #f1f5f9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }}>
                 {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 800, padding: '8px 0', fontSize:'15px' }}>Sign In (User)</button>}
                 {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign: 'left', background: 'none', border: 'none', fontWeight: 800, padding: '8px 0', fontSize:'15px' }}>Logout User ({currentUser.fullName?.split(' ')[0]})</button>}
                 <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', background: '#0f4d3a', color: 'white', border: 'none', borderRadius: 12, padding: '14px', fontWeight: 900 }}>Start a Fundraiser</button>
@@ -178,7 +239,7 @@ export default function App() {
         )}
       </header>
 
-      <main style={{ flexGrow: 1 }}>
+      <main style={{ flexGrow: 1, position:'relative', zIndex:1 }}>
         <Routes>
           <Route path="/" element={<HomeFeed onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />} />
           <Route path="/campaign/:id" element={<CampaignDetailWrapper campaigns={userCampaigns} onBack={() => navigate('/')} onDonate={(c) => navigate(`/donate/${c._id || c.id}`)} />} />
@@ -196,7 +257,7 @@ export default function App() {
           <Route path="/delegate" element={<DelegateDashboard />} />
         </Routes>
       </main>
-      <footer style={{ padding: '24px', textAlign: 'center', borderTop:'1px solid #f1f5f9', marginTop:20 }}>
+      <footer style={{ padding: '24px', textAlign: 'center', borderTop:'1px solid #f1f5f9', marginTop:20, position:'relative', zIndex:1 }}>
         <div>© {new Date().getFullYear()} Ask Kin - ask-kin.com</div>
       </footer>
       {isAuthOpen && <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={handleAuthSuccess} />}
