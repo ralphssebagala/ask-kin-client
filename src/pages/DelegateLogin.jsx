@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleLoginButton } from '../components/GoogleLoginButton.jsx'
 
 const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
@@ -67,8 +66,7 @@ export default function DelegateLogin(){
           <button disabled={loading} style={{background:'black', color:'white', padding:'14px', borderRadius:'999px', fontSize:'14px', fontWeight:'700', border:'none', cursor:'pointer', opacity: loading?0.6:1}}>
             {loading ? 'Signing in...' : 'Enter Dashboard →'}
           </button>
-          <GoogleLoginButton />
-
+          
         </div>
 
         <p style={{fontSize:'11px', color:'#aaa', textAlign:'center', marginTop:'20px'}}>
@@ -84,4 +82,6 @@ export default function DelegateLogin(){
     </div>
   );
 }
+
+
 

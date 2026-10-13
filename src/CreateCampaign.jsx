@@ -23,8 +23,6 @@ const PROVIDERS = [
 
 export default function CreateCampaign({ onSuccess }) {
   const navigate = useNavigate();
-
-  // === KYC GUARD ===
   const currentUser = useMemo(() => {
     try {
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
@@ -35,14 +33,8 @@ export default function CreateCampaign({ onSuccess }) {
   const isApproved = kycStatus === 'approved' || kycStatus === 'verified';
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/'); // not logged in
-      return;
-    }
-    if (!isApproved) {
-      // block direct URL access /create-campaign without approval
-      navigate('/dashboard');
-    }
+    if (!currentUser) { navigate('/'); return; }
+    if (!isApproved) { navigate('/dashboard'); }
   }, [currentUser, isApproved, navigate]);
 
   const [form, setForm] = useState({
@@ -73,33 +65,20 @@ export default function CreateCampaign({ onSuccess }) {
   };
 
   const handleSubmit = async ()=>{
-    if(!isApproved) {
-      alert('Verification required. Please wait for approval.');
-      navigate('/dashboard');
-      return;
-    }
+    if(!isApproved) { alert('Verification required.'); navigate('/dashboard'); return; }
     if(!form.title.trim()) return alert('Title required');
-    if(!isNGO ||!isOngoing){
-      if(!form.goal) return alert('Goal required');
-    }
+    if(!isNGO ||!isOngoing){ if(!form.goal) return alert('Goal required'); }
     if(!form.story.trim()) return alert('Story required');
-
     setLoading(true);
     try{
       const payload = {
-        title: form.title,
-        category: form.category,
-        description: form.story,
-        story: form.story,
+        title: form.title, category: form.category, description: form.story, story: form.story,
         goal: isNGO && isOngoing? 0 : Number(form.goal),
         isOngoing: isNGO && isOngoing,
         durationDays: isNGO && isOngoing? 0 : Number(form.durationDays),
         durationLabel: isNGO && isOngoing? 'Ongoing / No target' : DURATIONS.find(d=>d.value===Number(form.durationDays))?.label || `${form.durationDays} days`,
-        location: form.location,
-        townCity: form.townCity,
-        campaignCurrency: form.campaignCurrency,
-        payoutCountry: form.country,
-        payoutMethod: form.payoutMethod,
+        location: form.location, townCity: form.townCity, campaignCurrency: form.campaignCurrency,
+        payoutCountry: form.country, payoutMethod: form.payoutMethod,
         payoutProvider: form.payoutMethod==='Mobile Money'? form.payoutProvider : null,
         payoutProviderOther: form.payoutProviderOther,
         payoutMomoNumber: form.payoutMethod==='Mobile Money'? form.payoutMomoNumber : null,
@@ -108,36 +87,20 @@ export default function CreateCampaign({ onSuccess }) {
         bankAccountNumber: form.payoutMethod==='Bank Transfer'? form.bankAccountNumber : null,
         bankAccountName: form.payoutMethod==='Bank Transfer'? form.bankAccountName : null,
         bankCountry: form.payoutMethod==='Bank Transfer'? form.bankCountry : null,
-        youtubeUrl: form.youtubeUrl,
-        tiktokUrl: form.tiktokUrl,
-        image: form.image,
-        coverImage: form.image,
+        youtubeUrl: form.youtubeUrl, tiktokUrl: form.tiktokUrl,
+        image: form.image, coverImage: form.image,
         creator: currentUser?.fullName || currentUser?.name || 'Test User',
         creatorEmail: currentUser?.email
       };
-
-      const res = await fetch('https://api.ask-kin.com/api/campaigns', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
+      const res = await fetch('https://api.ask-kin.com/api/campaigns', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       const data = await res.json();
-      if(data.status==='success'){
-        alert('✅ Published! ' + data.campaign.id);
-        if(onSuccess) onSuccess(data.campaign);
-        navigate('/dashboard');
-      }else{
-        alert('Error: ' + data.message);
-      }
-    }catch(err){
-      alert(err.message);
-    }finally{ setLoading(false); }
+      if(data.status==='success'){ alert('✅ Published! ' + data.campaign.id); if(onSuccess) onSuccess(data.campaign); navigate('/dashboard'); } else { alert('Error: ' + data.message); }
+    }catch(err){ alert(err.message); } finally{ setLoading(false); }
   };
 
-  const inputStyle = {width:'100%', border:'1px solid #e2e8f0', borderRadius:'10px', padding:'10px 12px', fontSize:'13px', outline:'none'};
-  const labelStyle = {fontSize:'12px', fontWeight:'800', color:'#0f172a', marginBottom:'4px', display:'block'};
+  const inputStyle = {width:'100%', border:'1px solid #e7e5e4', borderRadius:'12px', padding:'11px 14px', fontSize:'13px', outline:'none', background:'white'};
+  const labelStyle = {fontSize:'12px', fontWeight:'800', color:'#1c1917', marginBottom:'5px', display:'block'};
 
-  // If not approved, show blocking screen (prevents flash)
   if (!currentUser) return null;
   if (!isApproved) {
     return (
@@ -146,153 +109,142 @@ export default function CreateCampaign({ onSuccess }) {
           <div style={{fontSize:'40px', marginBottom:'12px'}}>⏳</div>
           <h2 style={{fontSize:'18px', fontWeight:'800'}}>Verification required</h2>
           <p style={{fontSize:'14px', color:'#6b7280', marginTop:'8px'}}>Your account is under review. You'll be notified once approved. Then you can create campaigns.</p>
-          <button onClick={()=>navigate('/dashboard')} style={{marginTop:'20px', background:'#0f4d3a', color:'white', border:'none', borderRadius:'10px', padding:'10px 20px', fontWeight:'700', cursor:'pointer'}}>Go to Dashboard</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{maxWidth:'560px', margin:'0 auto', background:'#f8fafc', minHeight:'100vh', padding:'12px 12px 90px'}}>
-      <div style={{background:'white', borderRadius:'16px', padding:'16px', boxShadow:'0 4px 20px rgba(0,0,0,0.05)'}}>
-        <h2 style={{fontSize:'18px', fontWeight:'900', margin:'0 0 12px'}}>Create Campaign</h2>
+    <div style={{ background:'#FFFBF5', minHeight:'100vh', position:'relative', overflow:'hidden' }}>
+      {/* SURGICAL BACKGROUND - warm + dot grid + bottom green glow */}
+      <div style={{position:'absolute', inset:0, pointerEvents:'none'}}>
+        <div style={{position:'absolute', inset:0, opacity:0.05, backgroundImage:'radial-gradient(#0BA46C 1.5px, transparent 1.5px)', backgroundSize:'26px 26px'}}/>
+        <div style={{position:'absolute', left:0, right:0, bottom:'-30%', height:'60%', background:'linear-gradient(to top, rgba(11,164,108,0.18), rgba(11,164,108,0.06), transparent)', filter:'blur(40px)'}}/>
+      </div>
 
-        <label style={labelStyle}>Campaign Title</label>
-        <input style={inputStyle} value={form.title} onChange={e=>setForm({...form, title:e.target.value})} placeholder="e.g. Wheelchair for Okello - Kampala" />
-
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'12px'}}>
-          <div>
-            <label style={labelStyle}>Category</label>
-            <select style={inputStyle} value={form.category} onChange={e=>{
-              const val = e.target.value;
-              setForm({...form, category: val});
-              if(val!== 'NGO / Ongoing') setIsOngoing(false);
-            }}>
-              {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Currency</label>
-            <select style={inputStyle} value={form.campaignCurrency} onChange={e=>setForm({...form, campaignCurrency:e.target.value, country: e.target.value==='UGX'?'UG': e.target.value==='KES'?'KE': e.target.value==='TZS'?'TZ':'UG'})}>
-              <option value="UGX">UGX - Uganda</option>
-              <option value="KES">KES - Kenya</option>
-              <option value="TZS">TZS - Tanzania</option>
-              <option value="RWF">RWF - Rwanda</option>
-              <option value="BIF">BIF - Burundi</option>
-            </select>
-          </div>
+      <div style={{maxWidth:'680px', margin:'0 auto', padding:'22px 16px 80px', position:'relative', zIndex:1}}>
+        <div style={{marginBottom:'18px'}}>
+          <h1 style={{fontSize:'26px', fontWeight:'900', letterSpacing:'-0.4px'}}>Create a Fundraiser</h1>
+          <p style={{fontSize:'12.5px', color:'#78716c', marginTop:'4px'}}>Verified creators only • LC1 checked • MoMo/Bank payout Monday 11am</p>
         </div>
 
-        {isNGO && (
-          <div style={{marginTop:'12px', background:'#f0fdf4', border:'1px solid #a7f3d0', borderRadius:'10px', padding:'10px'}}>
-            <label style={{display:'flex', gap:'8px', alignItems:'center', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+        <div style={{background:'white', border:'1px solid #e7e5e4', borderRadius:'18px', padding:'18px', boxShadow:'0 6px 18px rgba(0,0,0,0.04)'}}>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            <div>
+              <label style={labelStyle}>Category</label>
+              <select style={inputStyle} value={form.category} onChange={e=>setForm({...form, category:e.target.value})}>
+                {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Duration</label>
+              <select style={inputStyle} value={form.durationDays} onChange={e=>setForm({...form, durationDays: Number(e.target.value)})}>
+                {DURATIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {isNGO && (
+            <div style={{marginTop:'12px', display:'flex', gap:'8px', alignItems:'center', background:'#f0fdf4', border:'1px solid #bbf7d0', padding:'10px 12px', borderRadius:'10px'}}>
               <input type="checkbox" checked={isOngoing} onChange={e=>setIsOngoing(e.target.checked)} />
-              Ongoing / No target (NGO - indefinite fundraising)
-            </label>
-          </div>
-        )}
-
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'12px'}}>
-          <div>
-            <label style={labelStyle}>Goal Amount</label>
-            <input style={inputStyle} type="number" value={form.goal} disabled={isNGO && isOngoing} onChange={e=>setForm({...form, goal:e.target.value})} placeholder="5000000" />
-          </div>
-          <div>
-            <label style={labelStyle}>Duration</label>
-            <select style={inputStyle} value={form.durationDays} disabled={isNGO && isOngoing} onChange={e=>setForm({...form, durationDays:Number(e.target.value)})}>
-              {DURATIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={{marginTop:'12px'}}>
-          <label style={labelStyle}>Please Tell Your Story (What are you fundraising for?)</label>
-          <textarea style={{...inputStyle, minHeight:'110px', resize:'vertical'}} value={form.story} onChange={e=>setForm({...form, story:e.target.value})} placeholder="Explain why, who benefits, how funds will be used..." />
-        </div>
-
-        <div style={{background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:'12px', padding:'12px', marginTop:'12px'}}>
-          <label style={labelStyle}>Video Links (Optional - 3x more trust)</label>
-          <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'6px'}}>
-            <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <span>▶️</span>
-              <input style={inputStyle} value={form.youtubeUrl} onChange={e=>setForm({...form, youtubeUrl:e.target.value})} placeholder="YouTube link https://youtube.com/watch?v=..." />
+              <span style={{fontSize:'12px', fontWeight:'700'}}>This is ongoing (no goal, no end date)</span>
             </div>
-            <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <span>🎵</span>
-              <input style={inputStyle} value={form.tiktokUrl} onChange={e=>setForm({...form, tiktokUrl:e.target.value})} placeholder="TikTok link https://tiktok.com/@..." />
-            </div>
-          </div>
-        </div>
-
-        <div style={{marginTop:'12px'}}>
-          <label style={labelStyle}>Cover Image</label>
-          <input type="file" accept="image/*" onChange={handleImage} style={inputStyle} />
-          {preview && <img src={preview} style={{width:'100%', height:'180px', objectFit:'cover', borderRadius:'10px', marginTop:'8px'}} alt="" />}
-          <div style={{fontSize:'10px', color:'#94a3b8', marginTop:'4px'}}>We auto-optimize large images to avoid ORA-01461</div>
-        </div>
-
-        <div style={{marginTop:'16px', background:'white', border:'1px solid #e2e8f0', borderRadius:'12px', padding:'12px'}}>
-          <label style={labelStyle}>Payout Method (Where money goes)</label>
-          <div style={{display:'flex', gap:'8px', margin:'8px 0'}}>
-            <button type="button" onClick={()=>setForm({...form, payoutMethod:'Mobile Money'})} style={{flex:1, padding:'9px', borderRadius:'10px', border:form.payoutMethod==='Mobile Money'?'2px solid #0BA469':'1px solid #e2e8f0', background:form.payoutMethod==='Mobile Money'?'#f0fdf4':'white', fontWeight:'800', fontSize:'12px'}}>📱 Mobile Money</button>
-            <button type="button" onClick={()=>setForm({...form, payoutMethod:'Bank Transfer'})} style={{flex:1, padding:'9px', borderRadius:'10px', border:form.payoutMethod==='Bank Transfer'?'2px solid #0BA469':'1px solid #e2e8f0', background:form.payoutMethod==='Bank Transfer'?'#f0fdf4':'white', fontWeight:'800', fontSize:'12px'}}>🏦 Bank Transfer</button>
-          </div>
-
-          {form.payoutMethod==='Mobile Money'? (
-            <>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
-                <div>
-                  <label style={{...labelStyle, fontSize:'11px'}}>Provider</label>
-                  <select style={inputStyle} value={form.payoutProvider} onChange={e=>setForm({...form, payoutProvider:e.target.value})}>
-                    {PROVIDERS.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{...labelStyle, fontSize:'11px'}}>MoMo Number</label>
-                  <input style={inputStyle} value={form.payoutMomoNumber} onChange={e=>setForm({...form, payoutMomoNumber:e.target.value})} placeholder="256772123456" />
-                </div>
-              </div>
-              {form.payoutProvider==='Other' && (
-                <input style={{...inputStyle, marginTop:'8px'}} value={form.payoutProviderOther} onChange={e=>setForm({...form, payoutProviderOther:e.target.value})} placeholder="Specify provider" />
-              )}
-              <div style={{marginTop:'8px'}}>
-                <label style={{...labelStyle, fontSize:'11px'}}>Account Name</label>
-                <input style={inputStyle} value={form.payoutName} onChange={e=>setForm({...form, payoutName:e.target.value})} placeholder="Name on MoMo account" />
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
-                <div>
-                  <label style={{...labelStyle, fontSize:'11px'}}>Bank Name</label>
-                  <input style={inputStyle} value={form.bankName} onChange={e=>setForm({...form, bankName:e.target.value})} placeholder="e.g. ABSA Bank" />
-                </div>
-                <div>
-                  <label style={{...labelStyle, fontSize:'11px'}}>Country</label>
-                  <input style={inputStyle} value={form.bankCountry} onChange={e=>setForm({...form, bankCountry:e.target.value})} placeholder="Uganda" />
-                </div>
-              </div>
-              <div style={{marginTop:'8px'}}>
-                <label style={{...labelStyle, fontSize:'11px'}}>Account Number</label>
-                <input style={inputStyle} value={form.bankAccountNumber} onChange={e=>setForm({...form, bankAccountNumber:e.target.value})} placeholder="73329765" />
-              </div>
-              <div style={{marginTop:'8px'}}>
-                <label style={{...labelStyle, fontSize:'11px'}}>Account Name</label>
-                <input style={inputStyle} value={form.bankAccountName} onChange={e=>setForm({...form, bankAccountName:e.target.value})} placeholder="e.g. Bushanah Petersen" />
-              </div>
-            </>
           )}
-          <div style={{fontSize:'10px', color:'#64748b', background:'#f8fafc', padding:'8px', borderRadius:'8px', marginTop:'10px'}}>
-            ✅ Threshold {form.campaignCurrency} {(form.campaignCurrency==='UGX'?50000:500).toLocaleString()} • Payouts every Monday 10am EAT • Verified badge
+
+          <div style={{marginTop:'12px'}}>
+            <label style={labelStyle}>Title</label>
+            <input style={inputStyle} value={form.title} onChange={e=>setForm({...form, title:e.target.value})} placeholder="e.g. Wheelchair for Okello - Gulu" />
           </div>
-        </div>
 
-        <button onClick={handleSubmit} disabled={loading} style={{width:'100%', marginTop:'16px', background:'#0f4d3a', color:'white', border:'none', borderRadius:'12px', padding:'14px', fontSize:'15px', fontWeight:'900', cursor:'pointer', opacity: loading?0.7:1}}>
-          {loading? 'Publishing...' : 'Publish Campaign'}
-        </button>
+          <div style={{marginTop:'12px'}}>
+            <label style={labelStyle}>Please Tell Your Story (What are you fundraising for?)</label>
+            <textarea style={{...inputStyle, minHeight:'110px', resize:'vertical'}} value={form.story} onChange={e=>setForm({...form, story:e.target.value})} placeholder="Explain why, who benefits, how funds will be used..." />
+          </div>
 
-        <div style={{textAlign:'center', fontSize:'11px', color:'#94a3b8', marginTop:'8px'}}>
-          📍 {form.townCity} • ⏳ {isNGO && isOngoing? 'Ongoing' : `${form.durationDays} days`} • Created {new Date().toLocaleDateString('en-GB')}
+          <div style={{background:'#fafaf9', border:'1px solid #e7e5e4', borderRadius:'12px', padding:'12px', marginTop:'12px'}}>
+            <label style={labelStyle}>Video Links (Optional - 3x more trust)</label>
+            <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'6px'}}>
+              <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <span>▶️</span>
+                <input style={inputStyle} value={form.youtubeUrl} onChange={e=>setForm({...form, youtubeUrl:e.target.value})} placeholder="YouTube link https://youtube.com/watch?v=..." />
+              </div>
+              <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <span>🎵</span>
+                <input style={inputStyle} value={form.tiktokUrl} onChange={e=>setForm({...form, tiktokUrl:e.target.value})} placeholder="TikTok link https://tiktok.com/@..." />
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'12px'}}>
+            <label style={labelStyle}>Cover Image</label>
+            <input type="file" accept="image/*" onChange={handleImage} style={inputStyle} />
+            {preview && <img src={preview} style={{width:'100%', height:'180px', objectFit:'cover', borderRadius:'10px', marginTop:'8px'}} alt="" onError={(e)=>{e.currentTarget.src='/placeholder.jpg'}} />}
+            <div style={{fontSize:'10px', color:'#a8a29e', marginTop:'4px'}}>We auto-optimize large images to avoid ORA-01461</div>
+          </div>
+
+          <div style={{marginTop:'16px', background:'white', border:'1px solid #e7e5e4', borderRadius:'12px', padding:'12px'}}>
+            <label style={labelStyle}>Payout Method (Where money goes)</label>
+            <div style={{display:'flex', gap:'8px', margin:'8px 0'}}>
+              <button type="button" onClick={()=>setForm({...form, payoutMethod:'Mobile Money'})} style={{flex:1, padding:'9px', borderRadius:'10px', border:form.payoutMethod==='Mobile Money'?'2px solid #0BA469':'1px solid #e7e5e4', background:form.payoutMethod==='Mobile Money'?'#f0fdf4':'white', fontWeight:'800', fontSize:'12px'}}>📱 Mobile Money</button>
+              <button type="button" onClick={()=>setForm({...form, payoutMethod:'Bank Transfer'})} style={{flex:1, padding:'9px', borderRadius:'10px', border:form.payoutMethod==='Bank Transfer'?'2px solid #0BA469':'1px solid #e7e5e4', background:form.payoutMethod==='Bank Transfer'?'#f0fdf4':'white', fontWeight:'800', fontSize:'12px'}}>🏦 Bank Transfer</button>
+            </div>
+
+            {form.payoutMethod==='Mobile Money'? (
+              <>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+                  <div>
+                    <label style={{...labelStyle, fontSize:'11px'}}>Provider</label>
+                    <select style={inputStyle} value={form.payoutProvider} onChange={e=>setForm({...form, payoutProvider:e.target.value})}>
+                      {PROVIDERS.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{...labelStyle, fontSize:'11px'}}>MoMo Number</label>
+                    <input style={inputStyle} value={form.payoutMomoNumber} onChange={e=>setForm({...form, payoutMomoNumber:e.target.value})} placeholder="256772123456" />
+                  </div>
+                </div>
+                {form.payoutProvider==='Other' && (
+                  <input style={{...inputStyle, marginTop:'8px'}} value={form.payoutProviderOther} onChange={e=>setForm({...form, payoutProviderOther:e.target.value})} placeholder="Specify provider" />
+                )}
+                <div style={{marginTop:'8px'}}>
+                  <label style={{...labelStyle, fontSize:'11px'}}>Account Name</label>
+                  <input style={inputStyle} value={form.payoutName} onChange={e=>setForm({...form, payoutName:e.target.value})} placeholder="Name on MoMo account" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+                  <div>
+                    <label style={{...labelStyle, fontSize:'11px'}}>Bank Name</label>
+                    <input style={inputStyle} value={form.bankName} onChange={e=>setForm({...form, bankName:e.target.value})} placeholder="e.g. ABSA Bank" />
+                  </div>
+                  <div>
+                    <label style={{...labelStyle, fontSize:'11px'}}>Country</label>
+                    <input style={inputStyle} value={form.bankCountry} onChange={e=>setForm({...form, bankCountry:e.target.value})} placeholder="Uganda" />
+                  </div>
+                </div>
+                <div style={{marginTop:'8px'}}>
+                  <label style={{...labelStyle, fontSize:'11px'}}>Account Number</label>
+                  <input style={inputStyle} value={form.bankAccountNumber} onChange={e=>setForm({...form, bankAccountNumber:e.target.value})} placeholder="73329765" />
+                </div>
+                <div style={{marginTop:'8px'}}>
+                  <label style={{...labelStyle, fontSize:'11px'}}>Account Name</label>
+                  <input style={inputStyle} value={form.bankAccountName} onChange={e=>setForm({...form, bankAccountName:e.target.value})} placeholder="e.g. Bushanah Petersen" />
+                </div>
+              </>
+            )}
+            <div style={{fontSize:'10px', color:'#57534e', background:'#fafaf9', padding:'8px', borderRadius:'8px', marginTop:'10px'}}>
+              ✅ Threshold {form.campaignCurrency} {(form.campaignCurrency==='UGX'?50000:500).toLocaleString()} • Payouts every Monday 10am EAT • Verified badge
+            </div>
+          </div>
+
+          <button onClick={handleSubmit} disabled={loading} style={{width:'100%', marginTop:'16px', background:'#0f4d3a', color:'white', border:'none', borderRadius:'12px', padding:'14px', fontSize:'15px', fontWeight:'900', cursor:'pointer', opacity: loading?0.7:1, boxShadow:'0 6px 18px rgba(15,77,58,0.2)'}}>
+            {loading? 'Publishing...' : 'Publish Campaign'}
+          </button>
+
+          <div style={{textAlign:'center', fontSize:'11px', color:'#a8a29e', marginTop:'8px'}}>
+            📍 {form.townCity} • ⏳ {isNGO && isOngoing? 'Ongoing' : `${form.durationDays} days`} • Created {new Date().toLocaleDateString('en-GB')}
+          </div>
         </div>
       </div>
     </div>

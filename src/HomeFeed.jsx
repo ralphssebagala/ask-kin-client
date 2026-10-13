@@ -70,24 +70,39 @@ export default function HomeFeed({ onSelectCampaign }) {
     return list;
   },[campaigns, activeCat, search]);
 
-  const getImg = (c)=> c.image||c.coverImage||c.imageUrl||`https://picsum.photos/seed/${c.id||c.ID}/600/400`;
+  // SURGICAL FIX: robust image with fallback to avoid placeholder.jpg 404
+  const getImg = (c)=> {
+    const raw = c.image||c.coverImage||c.imageUrl||c.poster||'';
+    if(!raw) return '/placeholder.jpg';
+    // guard against .txt and bad paths
+    if(raw.includes('.txt') || raw.includes('placeholder.jpg1')) return '/placeholder.jpg';
+    if(raw.startsWith('/campaign/')) return `https://api.ask-kin.com${raw}`;
+    return raw;
+  };
   const fmt = (n)=> new Intl.NumberFormat('en-UG').format(Number(n||0));
 
   return (
-    <div style={{ background:'#f6f7f8', minHeight:'100vh' }}>
-      <div style={{ background:'#040A1F', padding: isMobile? '22px 16px 18px' : '36px 24px 28px', textAlign:'center' }}>
+    <div style={{ background:'#FFFBF5', minHeight:'100vh', position:'relative', overflow:'hidden' }}>
+      {/* SURGICAL ADD: background design - dot grid + bottom green glow - as agreed, tiles background impressive to bottom, no glow on header here */}
+      <div style={{position:'absolute', inset:0, pointerEvents:'none'}}>
+        <div style={{position:'absolute', inset:0, opacity:0.06, backgroundImage:'radial-gradient(#0BA46C 1.5px, transparent 1.5px)', backgroundSize:'26px 26px'}}/>
+        <div style={{position:'absolute', left:0, right:0, bottom:'-30%', height:'65%', background:'linear-gradient(to top, rgba(11,164,108,0.22), rgba(11,164,108,0.08), transparent)', filter:'blur(40px)'}}/>
+        <div style={{position:'absolute', left:'50%', transform:'translateX(-50%)', bottom:'-15%', width:'80%', height:'45%', background:'rgba(11,164,108,0.12)', borderRadius:'50%', filter:'blur(80px)'}}/>
+      </div>
+
+      <div style={{ background:'#040A1F', padding: isMobile? '22px 16px 18px' : '36px 24px 28px', textAlign:'center', position:'relative', zIndex:1 }}>
         <h1 style={{ fontSize: isMobile? '26px' : '38px', fontWeight:'900', color:'white', margin:'0 0 6px', letterSpacing:'-0.5px' }}>Give Like <span style={{ color:'#0BA469' }}>Kin.</span></h1>
         <p style={{ fontSize: isMobile? '12.5px' : '14px', color:'#94a3b8', margin:0 }}>Rekindling the Gift of Giving.</p>
       </div>
 
-      <div style={{ position:'sticky', top:'0', zIndex:15, background:'rgba(246,247,248,0.92)', backdropFilter:'blur(10px)', padding:'8px 12px', borderBottom:'1px solid #eef2f7', display:'flex', justifyContent:'center' }}>
-        <div style={{ width:'100%', maxWidth:'420px', display:'flex', alignItems:'center', gap:'8px', background:'white', border:'1px solid #e5e7eb', borderRadius:'999px', padding:'9px 14px' }}>
+      <div style={{ position:'sticky', top:'0', zIndex:15, background:'rgba(255,251,245,0.88)', backdropFilter:'blur(10px)', padding:'8px 12px', borderBottom:'1px solid rgba(238,242,247,0.8)', display:'flex', justifyContent:'center' }}>
+        <div style={{ width:'100%', maxWidth:'420px', display:'flex', alignItems:'center', gap:'8px', background:'white', border:'1px solid #e5e7eb', borderRadius:'999px', padding:'9px 14px', boxShadow:'0 4px 12px rgba(0,0,0,0.04)' }}>
           <span style={{color:'#9ca3af', fontSize:'14px'}}>&#128269;</span>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title or town..." style={{flex:1, border:'none', outline:'none', fontSize:'13px', background:'transparent'}} />
         </div>
       </div>
 
-      <div style={{maxWidth:'1120px', margin:'0 auto', padding: isMobile? '14px 12px 80px' : '22px 24px 80px'}}>
+      <div style={{maxWidth:'1120px', margin:'0 auto', padding: isMobile? '14px 12px 80px' : '22px 24px 80px', position:'relative', zIndex:1}}>
 
         {/* FIXED: Bigger tiles - PC 4x3, Mobile 3x4, fills viewport */}
         <div style={{ 
@@ -125,14 +140,9 @@ export default function HomeFeed({ onSelectCampaign }) {
             const raised=c.raised||c.raisedAmount||0;
             const goal=c.goal||c.goalAmount||5000000;
             const pct=Math.min(100,Math.max(4,Math.round((raised/goal)*100)));
-            const daysLeft = getDaysLeft(c.createdAt, c.durationDays||30);
-            const donorCount = c.donorCount || c.DONOR_COUNT || c.totalDonors || c.donationsCount || 0;
-
-            const city = c.townCity || c.TOWN_CITY || c.location || c.LOCATION || c.TOWN || 'Kampala';
-            const rawCountry = c.payoutCountry || c.PAYOUT_COUNTRY || c.country || c.COUNTRY || c.countryName || 'Uganda';
-            const country = normalizeCountry(rawCountry);
-            const locationStr = `${city}, ${country}`;
-
+            const daysLeft = c.createdAt? getDaysLeft(c.createdAt, c.durationDays) : null;
+            const donorCount = c.donorCount||c.donors||0;
+            const locationStr = `${c.townCity||c.town||c.location||'Kampala'}, ${normalizeCountry(c.country)}`;
             const currency = c.campaignCurrency || 'UGX';
             const isBank = (c.payoutMethod||'').toLowerCase().includes('bank');
 
@@ -140,7 +150,10 @@ export default function HomeFeed({ onSelectCampaign }) {
               <div key={c.id || idx} onClick={()=>onSelectCampaign&&onSelectCampaign(c)} style={{ background:'white', borderRadius:'16px', overflow:'hidden', boxShadow:'0 8px 24px rgba(0,0,0,0.06)', border:'1px solid #f1f5f9', cursor:'pointer', display:'flex', flexDirection: isMobile? 'column' : 'row' }}>
 
                 <div style={{ width: isMobile? '100%' : '42%', height: isMobile? '160px' : '240px', position:'relative', background:'#f3f4f6', flexShrink:0 }}>
-                  <img src={getImg(c)} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="" />
+                  <img 
+                    src={getImg(c)} 
+                    onError={(e)=>{ e.currentTarget.src='/placeholder.jpg'; e.currentTarget.onerror=null; }}
+                    style={{width:'100%', height:'100%', objectFit:'cover'}} alt={c.title||''} />
                   <div style={{ position:'absolute', top:'8px', left:'8px', background:'rgba(255,255,255,0.95)', borderRadius:'999px', padding:'3px 8px', fontSize:'10px', fontWeight:'700', color:'#166534', display:'flex', gap:'5px' }}>
                     <span>{c.category||'Medical'}</span>
                     {c.youtubeUrl && <span style={{color:'#dc2626'}}>▶️</span>}
