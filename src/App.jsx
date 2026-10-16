@@ -14,6 +14,7 @@ import DelegateDashboard from './pages/DelegateDashboard';
 import DelegateLogin from './pages/DelegateLogin';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import Terms from './pages/Terms.jsx';
+import ContactSupport from './pages/ContactSupport.jsx';
 
 function CampaignDetailWrapper({ campaigns, onBack, onDonate }) {
   const { id } = useParams();
@@ -70,7 +71,6 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: '#FFFBF5', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes greenPulse { 0%,100%{opacity:0.8;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
-        @keyframes greenFlow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         .ak-header{
           position:fixed;
           top:0;left:0;right:0;
@@ -82,7 +82,6 @@ export default function App() {
           transition:all 0.3s;
           padding-top:env(safe-area-inset-top, 0px);
           transform:translateZ(0);
-          -webkit-transform:translateZ(0);
           will-change:transform;
           backface-visibility:hidden;
         }
@@ -192,6 +191,7 @@ export default function App() {
                 <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>💬 Ask Kin Assistant</button>
                 <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>📊 Dashboard</button>
                 <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>❓ FAQ</button>
+                <button onClick={() => { navigate('/contact-support'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#eef2ff', fontWeight:700, fontSize:'13px', borderRadius:8, color:'#0f4d3a' }}>📞 Contact Support</button>
               </div>
 
               <div style={{ marginTop:'auto', borderTop:'1px solid #e2e8f0', paddingTop:12, display:'flex', flexDirection:'column', gap:8, paddingBottom:'calc(70px + env(safe-area-inset-bottom, 0px))' }}>
@@ -233,6 +233,7 @@ export default function App() {
           <Route path="/create-campaign" element={<CreateCampaign onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/edit-campaign/:id" element={<EditCampaignWrapper campaigns={userCampaigns} onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact-support" element={<ContactSupport />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin" element={<AdminDashboard />} />
