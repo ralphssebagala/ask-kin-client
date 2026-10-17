@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
 import HomeFeed from './HomeFeed';
 import CampaignDetail from './CampaignDetail';
 import AuthModal from './AuthModal';
@@ -71,20 +71,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: '#FFFBF5', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes greenPulse { 0%,100%{opacity:0.8;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
-        .ak-header{
-          position:fixed;
-          top:0;left:0;right:0;
-          z-index:40;
-          background:rgba(255,255,255,0.92);
-          backdrop-filter:blur(12px);
-          -webkit-backdrop-filter:blur(12px);
-          border-bottom:1px solid rgba(11,164,108,0.08);
-          transition:all 0.3s;
-          padding-top:env(safe-area-inset-top, 0px);
-          transform:translateZ(0);
-          will-change:transform;
-          backface-visibility:hidden;
-        }
+        .ak-header{position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,164,108,0.08);transition:all 0.3s;padding-top:env(safe-area-inset-top, 0px);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
         .ak-header.glow{box-shadow:0 1px 0 rgba(0,0,0,0.05), 0 8px 24px rgba(11,164,108,0.18), 0 0 0 1px rgba(11,164,108,0.08)}
         .ak-header.no-glow{box-shadow:0 6px 18px rgba(0,0,0,0.06);border-bottom:3px solid #0f4d3a}
         .ak-header-inner{max-width:1440px;margin:0 auto;padding:0 16px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:0;position:relative}
@@ -137,27 +124,22 @@ export default function App() {
           .ak-hamburger{display:block !important}
         }
         .ak-main{flex-grow:1;padding-top:72px}
-        @media(min-width:800px){.ak-main{padding-top:88px}}
+        .ak-main.no-gap{padding-top:0px}
+        @media(min-width:800px){
+          .ak-main{padding-top:88px}
+          .ak-main.no-gap{padding-top:0px}
+        }
       `}</style>
 
       <header className={`ak-header ${showGlow ? 'glow' : 'no-glow'}`}>
         {showGlow && (
-          <div style={{
-            position:'absolute', bottom:-48, left:0, right:0, height:64, pointerEvents:'none',
-            background:`linear-gradient(180deg, rgba(11,164,108,${0.15 + glowIntensity*0.35}) 0%, rgba(11,164,108,${(0.15 + glowIntensity*0.35)*0.6}) 25%, transparent 100%)`,
-            filter:`blur(${4 + glowIntensity*6}px)`, animation:'greenPulse 3s ease-in-out infinite'
-          }}/>
+          <div style={{ position:'absolute', bottom:-48, left:0, right:0, height:64, pointerEvents:'none', background:`linear-gradient(180deg, rgba(11,164,108,${0.15 + glowIntensity*0.35}) 0%, rgba(11,164,108,${(0.15 + glowIntensity*0.35)*0.6}) 25%, transparent 100%)`, filter:`blur(${4 + glowIntensity*6}px)`, animation:'greenPulse 3s ease-in-out infinite'}}/>
         )}
-
         <div className="ak-header-inner">
           <div className="ak-logo" onClick={() => navigate('/')}>
             <img src="/logo.png" alt="Ask Kin logo" />
-            <div className="ak-logo-text">
-              <span className="name">Ask Kin</span>
-              <span className="tagline">Rekindling the Gift of Giving</span>
-            </div>
+            <div className="ak-logo-text"><span className="name">Ask Kin</span><span className="tagline">Rekindling the Gift of Giving</span></div>
           </div>
-
           <div className="ak-center">
             <div className="ak-center-spacer" />
             <div className="ak-nav-group">
@@ -168,20 +150,18 @@ export default function App() {
             </div>
             <div className="ak-center-spacer" />
           </div>
-
           <div className="ak-right">
             {!currentUser && <button onClick={() => setIsAuthOpen(true)} style={{ background:'none', border:'none', cursor:'pointer', fontWeight:800, fontSize:'14px' }}>Sign In</button>}
             {currentUser && <button onClick={handleLogout} style={{ background:'none', border:'none', cursor:'pointer', fontWeight:800, fontSize:'12px' }}>Logout ({currentUser.fullName?.split(' ')[0]})</button>}
             <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); }} style={{ background:'#0f4d3a', color:'white', border:'none', borderRadius:'999px', padding:'12px 20px', fontWeight:900, fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}>Start a Fundraiser</button>
           </div>
-
           <button className="ak-hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>☰</button>
         </div>
 
         {isMenuOpen && (
-          <div style={{ position:'fixed', inset:0, zIndex:60, background:'rgba(0,0,0,0.4)', paddingTop:'env(safe-area-inset-top, 0px)' }} onClick={() => setIsMenuOpen(false)}>
-            <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'85%', maxWidth:'360px', background:'rgba(255,255,255,0.98)', backdropFilter:'blur(18px)', padding:'16px', paddingTop:'calc(16px + env(safe-area-inset-top, 0px))', overflowY:'auto', borderLeft:'1px solid rgba(11,164,108,0.12)', height:'100dvh', display:'flex', flexDirection:'column' }} onClick={e=>e.stopPropagation()}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.4)', paddingTop:'env(safe-area-inset-top, 0px)' }} onClick={() => setIsMenuOpen(false)}>
+            <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'85%', maxWidth:'380px', background:'rgba(255,255,255,0.98)', backdropFilter:'blur(16px)', padding:'20px', paddingTop:'calc(20px + env(safe-area-inset-top, 0px))', overflowY:'auto', borderLeft:'1px solid rgba(11,164,108,0.1)', height:'100dvh' }} onClick={e=>e.stopPropagation()}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
                 <span style={{fontWeight:900, fontSize:'16px', display:'flex', alignItems:'center', gap:8}}><span style={{width:8, height:8, background:'#0BA46C', borderRadius:'50%', display:'inline-block', animation:'greenPulse 2s infinite'}}/>Menu</span>
                 <button onClick={() => setIsMenuOpen(false)} style={{background:'#f1f5f9', border:'none', width:32, height:32, borderRadius:16, fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
               </div>
@@ -191,7 +171,7 @@ export default function App() {
                 <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>💬 Ask Kin Assistant</button>
                 <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>📊 Dashboard</button>
                 <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>❓ FAQ</button>
-                <button onClick={() => { navigate('/contact-support'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#eef2ff', fontWeight:700, fontSize:'13px', borderRadius:8, color:'#0f4d3a' }}>📞 Contact Support</button>
+                <button onClick={() => { navigate('/contact-support'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#fef2f2', fontWeight:700, fontSize:'13px', borderRadius:8, color:'#991b1b', borderLeft:'3px solid #dc2626' }}>📞 Contact Support</button>
               </div>
 
               <div style={{ marginTop:'auto', borderTop:'1px solid #e2e8f0', paddingTop:12, display:'flex', flexDirection:'column', gap:8, paddingBottom:'calc(70px + env(safe-area-inset-bottom, 0px))' }}>
@@ -215,14 +195,14 @@ export default function App() {
                   <button onClick={() => { navigate('/privacy-policy'); setIsMenuOpen(false); }} style={{ flex:1, padding:'8px', border:'1px solid #e2e8f0', background:'#f8fafc', fontWeight:600, fontSize:'11px', borderRadius:8, color:'#64748b' }}>Privacy Policy</button>
                 </div>
 
-                <div style={{ textAlign:'center', fontSize:'10px', color:'#94a3b8', marginTop:4 }}>v2.4.1 • Ask Kin Verified • Middle Authority</div>
+                <div style={{ textAlign:'center', fontSize:'10px', color:'#94a3b8', marginTop:4 }}>v2.4.1 • Verified • LC1 Verified</div>
               </div>
             </div>
           </div>
         )}
       </header>
 
-      <main className="ak-main">
+      <main className={`ak-main ${isExplore ? 'no-gap' : ''}`}>
         <Routes>
           <Route path="/" element={<HomeFeed onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />} />
           <Route path="/campaign/:id" element={<CampaignDetailWrapper campaigns={userCampaigns} onBack={() => navigate('/')} onDonate={(c) => navigate(`/donate/${c._id || c.id}`)} />} />
@@ -233,9 +213,9 @@ export default function App() {
           <Route path="/create-campaign" element={<CreateCampaign onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/edit-campaign/:id" element={<EditCampaignWrapper campaigns={userCampaigns} onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/contact-support" element={<ContactSupport />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/contact-support" element={<ContactSupport />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/delegate-login" element={<DelegateLogin />} />
           <Route path="/delegate" element={<DelegateDashboard />} />
