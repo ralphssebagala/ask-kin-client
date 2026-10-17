@@ -81,7 +81,7 @@ export default function AdminDashboard(){
     return (
       <div style={{minHeight:'100vh', background:'#fbfaf7', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px'}}>
         <form onSubmit={handleOwnerLogin} style={{background:'white', borderRadius:'24px', padding:'32px', width:'100%', maxWidth:'400px', border:'1px solid #f0f0f0', boxShadow:'0 20px 40px rgba(0,0,0,0.06)'}}>
-          <div style={{textAlign:'center', marginBottom:'20px'}}><h1 style={{fontSize:'24px', fontWeight:'800'}}>Ask Kin — Owner Login</h1><p style={{fontSize:'13px', color:'#888', marginTop:'6px'}}>Sign in to manage delegates & KYC</p></div>
+          <div style={{textAlign:'center', marginBottom:'20px'}}><h1 style={{fontSize:'24px', fontWeight:'800'}}>Ask Kin — Admin Dashboard</h1><p style={{fontSize:'13px', color:'#888', marginTop:'6px'}}>Sign in to manage delegates & KYC</p></div>
           {loginError && <div style={{background:'#fef2f2', color:'#dc2626', padding:'12px', borderRadius:'12px', fontSize:'13px', marginBottom:'16px'}}>{loginError}</div>}
           <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
             <input style={{background:'#f9f8f5', border:'1px solid #eee', borderRadius:'999px', padding:'14px 18px', fontSize:'14px'}} placeholder="Owner Email" type="email" value={loginForm.email} onChange={e=>setLoginForm({...loginForm, email:e.target.value})} required/>

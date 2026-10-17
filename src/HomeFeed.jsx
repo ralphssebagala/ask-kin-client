@@ -70,11 +70,9 @@ export default function HomeFeed({ onSelectCampaign }) {
     return list;
   },[campaigns, activeCat, search]);
 
-  // SURGICAL FIX: robust image with fallback to avoid placeholder.jpg 404
   const getImg = (c)=> {
     const raw = c.image||c.coverImage||c.imageUrl||c.poster||'';
     if(!raw) return '/placeholder.jpg';
-    // guard against .txt and bad paths
     if(raw.includes('.txt') || raw.includes('placeholder.jpg1')) return '/placeholder.jpg';
     if(raw.startsWith('/campaign/')) return `https://api.ask-kin.com${raw}`;
     return raw;
@@ -83,28 +81,58 @@ export default function HomeFeed({ onSelectCampaign }) {
 
   return (
     <div style={{ background:'#FFFBF5', minHeight:'100vh', position:'relative', overflow:'hidden' }}>
-      {/* SURGICAL ADD: background design - dot grid + bottom green glow - as agreed, tiles background impressive to bottom, no glow on header here */}
+      {/* background design - dot grid + bottom green glow */}
       <div style={{position:'absolute', inset:0, pointerEvents:'none'}}>
         <div style={{position:'absolute', inset:0, opacity:0.06, backgroundImage:'radial-gradient(#0BA46C 1.5px, transparent 1.5px)', backgroundSize:'26px 26px'}}/>
         <div style={{position:'absolute', left:0, right:0, bottom:'-30%', height:'65%', background:'linear-gradient(to top, rgba(11,164,108,0.22), rgba(11,164,108,0.08), transparent)', filter:'blur(40px)'}}/>
         <div style={{position:'absolute', left:'50%', transform:'translateX(-50%)', bottom:'-15%', width:'80%', height:'45%', background:'rgba(11,164,108,0.12)', borderRadius:'50%', filter:'blur(80px)'}}/>
       </div>
 
-      <div style={{ background:'#040A1F', padding: isMobile? '22px 16px 18px' : '36px 24px 28px', textAlign:'center', position:'relative', zIndex:1 }}>
-        <h1 style={{ fontSize: isMobile? '26px' : '38px', fontWeight:'900', color:'white', margin:'0 0 6px', letterSpacing:'-0.5px' }}>Give Like <span style={{ color:'#0BA469' }}>Kin.</span></h1>
-        <p style={{ fontSize: isMobile? '12.5px' : '14px', color:'#94a3b8', margin:0 }}>Rekindling the Gift of Giving.</p>
-      </div>
-
-      <div style={{ position:'sticky', top:'0', zIndex:15, background:'rgba(255,251,245,0.88)', backdropFilter:'blur(10px)', padding:'8px 12px', borderBottom:'1px solid rgba(238,242,247,0.8)', display:'flex', justifyContent:'center' }}>
-        <div style={{ width:'100%', maxWidth:'420px', display:'flex', alignItems:'center', gap:'8px', background:'white', border:'1px solid #e5e7eb', borderRadius:'999px', padding:'9px 14px', boxShadow:'0 4px 12px rgba(0,0,0,0.04)' }}>
-          <span style={{color:'#9ca3af', fontSize:'14px'}}>&#128269;</span>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title or town..." style={{flex:1, border:'none', outline:'none', fontSize:'13px', background:'transparent'}} />
+      {/* CLIENT HOMEPAGE - KEEP DARK BAND, NO GAP, SEARCH INSIDE - like ask-kin.com explore (Screenshot 1049) */}
+      <div style={{ 
+        background:'#040A1F', 
+        padding: isMobile? '24px 16px 22px' : '38px 24px 32px', 
+        textAlign:'center', 
+        position:'relative', 
+        zIndex:1,
+        marginTop:0,
+        borderTop:'none'
+      }}>
+        <h1 style={{ fontSize: isMobile? '26px' : '38px', fontWeight:'900', color:'white', margin:'0 0 6px', letterSpacing:'-0.5px' }}>
+          Give Like <span style={{ color:'#0BA469' }}>Kin.</span>
+        </h1>
+        <p style={{ fontSize: isMobile? '12.5px' : '14px', color:'#94a3b8', margin:'0 0 18px' }}>
+          Rekindling the Gift of Giving.
+        </p>
+        
+        {/* SEARCH INSIDE DARK BAND - like website explore */}
+        <div style={{ display:'flex', justifyContent:'center' }}>
+          <div style={{ 
+            width:'100%', 
+            maxWidth:'520px', 
+            display:'flex', 
+            alignItems:'center', 
+            gap:'8px', 
+            background:'white', 
+            border:'1px solid #e5e7eb', 
+            borderRadius:'999px', 
+            padding:'11px 16px', 
+            boxShadow:'0 4px 20px rgba(0,0,0,0.15)' 
+          }}>
+            <span style={{color:'#9ca3af', fontSize:'14px'}}>🔍</span>
+            <input 
+              value={search} 
+              onChange={e=>setSearch(e.target.value)} 
+              placeholder="Search by title or town..." 
+              style={{flex:1, border:'none', outline:'none', fontSize:'13px', background:'transparent', color:'#0f172a'}} 
+            />
+          </div>
         </div>
       </div>
 
       <div style={{maxWidth:'1120px', margin:'0 auto', padding: isMobile? '14px 12px 80px' : '22px 24px 80px', position:'relative', zIndex:1}}>
 
-        {/* FIXED: Bigger tiles - PC 4x3, Mobile 3x4, fills viewport */}
+        {/* Bigger tiles - PC 4x3, Mobile 3x4 */}
         <div style={{ 
           display:'grid', 
           gridTemplateColumns: isMobile? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', 
@@ -122,42 +150,35 @@ export default function HomeFeed({ onSelectCampaign }) {
                 minHeight: isMobile? '96px' : '126px',
                 cursor:'pointer', 
                 boxShadow: active? '0 6px 18px rgba(11,164,105,0.28)' : '0 3px 12px rgba(0,0,0,0.05)',
-                display:'flex',
-                flexDirection:'column',
-                alignItems:'center',
-                justifyContent:'center',
-                transition:'all 0.15s ease'
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'6px',
+                transition:'all 0.15s'
               }}>
-                {cat.dots? <div style={{display:'grid', gridTemplateColumns:'repeat(3, 6px)', gap:'4px', justifyContent:'center', marginBottom: isMobile? '8px' : '10px'}}>{Array.from({length:9}).map((_,i)=><div key={i} style={{width:'6px', height:'6px', borderRadius:'50%', background: active? 'white' : '#111827'}}/>)}</div> : <div style={{fontSize: isMobile? '26px' : '32px', marginBottom: isMobile? '6px' : '8px', lineHeight:1}}>{cat.icon}</div>}
-                <div style={{fontSize: isMobile? '11px' : '12.5px', fontWeight:'800', color: active? 'white' : '#111827', lineHeight:'1.15', textAlign:'center', letterSpacing:'-0.1px'}}>{cat.label}</div>
+                <span style={{fontSize: isMobile? '22px' : '28px'}}>{cat.dots? <span style={{display:'grid', gridTemplateColumns:'repeat(3, 6px)', gap:'3px'}}>{Array(9).fill(0).map((_,i)=><span key={i} style={{width:'6px', height:'6px', background: active? 'white' : '#0BA469', borderRadius:'50%', display:'block'}}/>)}</span> : cat.icon}</span>
+                <span style={{fontSize: isMobile? '11px' : '13px', fontWeight:'800', color: active? 'white' : '#0f172a', textAlign:'center', lineHeight:'1.1'}}>{cat.label}</span>
               </button>
             )
           })}
         </div>
 
-        <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+        <div style={{display:'flex', flexDirection:'column', gap:'14px'}}>
           {filtered.map((c, idx)=>{
-            const raised=c.raised||c.raisedAmount||0;
-            const goal=c.goal||c.goalAmount||5000000;
-            const pct=Math.min(100,Math.max(4,Math.round((raised/goal)*100)));
-            const daysLeft = c.createdAt? getDaysLeft(c.createdAt, c.durationDays) : null;
+            const goal = c.goal||c.target||500000;
+            const raised = c.raised||c.collected||0;
+            const pct = Math.min(100, Math.round((raised/goal)*100));
+            const isBank = !!(c.bankName||c.bankAccountNumber);
+            const country = normalizeCountry(c.country||c.payoutCountry);
+            const locationStr = `${c.townCity||c.town||''}${c.townCity&&country?', ':''}${country}`;
             const donorCount = c.donorCount||c.donors||0;
-            const locationStr = `${c.townCity||c.town||c.location||'Kampala'}, ${normalizeCountry(c.country)}`;
-            const currency = c.campaignCurrency || 'UGX';
-            const isBank = (c.payoutMethod||'').toLowerCase().includes('bank');
+            const currency = c.currency||'UGX';
+            const daysLeft = getDaysLeft(c.createdAt, c.durationDays||30);
 
             return (
               <div key={c.id || idx} onClick={()=>onSelectCampaign&&onSelectCampaign(c)} style={{ background:'white', borderRadius:'16px', overflow:'hidden', boxShadow:'0 8px 24px rgba(0,0,0,0.06)', border:'1px solid #f1f5f9', cursor:'pointer', display:'flex', flexDirection: isMobile? 'column' : 'row' }}>
 
                 <div style={{ width: isMobile? '100%' : '42%', height: isMobile? '160px' : '240px', position:'relative', background:'#f3f4f6', flexShrink:0 }}>
-                  <img 
-                    src={getImg(c)} 
-                    onError={(e)=>{ e.currentTarget.src='/placeholder.jpg'; e.currentTarget.onerror=null; }}
-                    style={{width:'100%', height:'100%', objectFit:'cover'}} alt={c.title||''} />
+                  <img src={getImg(c)} onError={(e)=>{ e.currentTarget.src='/placeholder.jpg'; e.currentTarget.onerror=null; }} style={{width:'100%', height:'100%', objectFit:'cover'}} alt={c.title||''} />
                   <div style={{ position:'absolute', top:'8px', left:'8px', background:'rgba(255,255,255,0.95)', borderRadius:'999px', padding:'3px 8px', fontSize:'10px', fontWeight:'700', color:'#166534', display:'flex', gap:'5px' }}>
                     <span>{c.category||'Medical'}</span>
-                    {c.youtubeUrl && <span style={{color:'#dc2626'}}>▶️</span>}
-                    {c.tiktokUrl && <span>🎵</span>}
                   </div>
                   {daysLeft!== null && daysLeft > 0 && (
                     <div style={{position:'absolute', top:'8px', right:'8px', background:'#040A1F', color:'white', fontSize:'10px', fontWeight:'800', padding:'4px 8px', borderRadius:'999px'}}>
@@ -167,73 +188,32 @@ export default function HomeFeed({ onSelectCampaign }) {
                 </div>
 
                 <div style={{flex:1, padding: isMobile? '12px' : '16px 18px', display:'flex', flexDirection:'column'}}>
-
                   <div style={{display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px', flexWrap:'wrap'}}>
                     <span style={{fontWeight:'800', fontSize:'11px', color:'#0f172a'}}>Ask Kin</span>
-                    <span style={{display:'inline-flex', alignItems:'center', gap:'3px', background:'#f0fdf4', border:'1px solid #bbf7d0', color:'#15803d', fontSize:'8.5px', fontWeight:'700', padding:'2px 7px', borderRadius:'999px'}}>
-                      Verified • Fundraiser
-                    </span>
+                    <span style={{display:'inline-flex', alignItems:'center', gap:'3px', background:'#f0fdf4', border:'1px solid #bbf7d0', color:'#15803d', fontSize:'8.5px', fontWeight:'700', padding:'2px 7px', borderRadius:'999px'}}>Verified • Fundraiser</span>
                     <span style={{fontSize:'10px', background:isBank?'#f0fdf4':'#eff6ff', border:`1px solid ${isBank?'#bbf7d0':'#bfdbfe'}`, color:isBank?'#166534':'#1e40af', padding:'2px 7px', borderRadius:'999px', fontWeight:'700'}}>
                       {isBank? `🏦 ${c.bankName||'Bank'}` : `📱 ${c.payoutProvider||'MoMo'}`}
                     </span>
                   </div>
-
-                  <div style={{ fontSize: isMobile? '15px' : '18px', fontWeight:'900', lineHeight:'1.2', color:'#0f172a', marginBottom:'4px', display:'-webkit-box', WebkitLineClamp:1, WebKitBoxOrient:'vertical', overflow:'hidden' }}>{c.title}</div>
-                  <div style={{ fontSize:'12px', color:'#64748b', lineHeight:'1.3', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:1, WebKitBoxOrient:'vertical', overflow:'hidden' }}>{c.description || c.story || 'Support this campaign'}</div>
-
+                  <div style={{ fontSize: isMobile? '15px' : '18px', fontWeight:'900', lineHeight:'1.2', color:'#0f172a', marginBottom:'4px' }}>{c.title}</div>
+                  <div style={{ fontSize:'12px', color:'#64748b', lineHeight:'1.3', marginBottom:'8px' }}>{c.description || c.story || 'Support this campaign'}</div>
                   <div style={{marginBottom:'6px'}}><span style={{fontSize:'14px', fontWeight:'900', color:'#0f172a'}}>{currency} {fmt(raised)}</span><span style={{fontSize:'11px', color:'#94a3af', marginLeft:'5px'}}>raised of {currency} {fmt(goal)}</span></div>
-
                   <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px'}}>
                     <div style={{flex:1, height:'6px', background:'#f1f5f9', borderRadius:'999px', overflow:'hidden'}}><div style={{width:`${pct}%`, height:'100%', background:'#0BA469'}}/></div>
                     <span style={{fontWeight:'800', color:'#0BA469', fontSize:'11px'}}>{pct}%</span>
                   </div>
-
                   <div style={{display:'flex', alignItems:'center', gap:'10px', fontSize:'10.5px', color:'#64748b', marginBottom:'8px', flexWrap:'wrap'}}>
-                    <span style={{display:'flex', alignItems:'center', gap:'4px'}}>📍 {locationStr}</span>
-                    <span style={{display:'flex', alignItems:'center', gap:'4px'}}>📅 {c.createdAt? new Date(c.createdAt).toLocaleDateString('en-GB',{day:'2-digit', month:'short'}) : ''}</span>
-                    <span style={{display:'flex', alignItems:'center', gap:'4px'}}>👥 {donorCount} {donorCount===1?'donor':'donors'}</span>
-                    <span style={{display:'flex', alignItems:'center', gap:'4px'}}>⏳ {daysLeft}d left</span>
+                    <span>📍 {locationStr}</span>
+                    <span>👥 {donorCount} donors</span>
+                    <span>⏳ {daysLeft}d left</span>
                   </div>
-
                   <div style={{marginTop:'6px', width:'100%', maxWidth: isMobile? '100%' : '380px'}}>
                     <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
-                      <button style={{
-                        flex: 1,
-                        background:'#0BA469',
-                        color:'white',
-                        border:'none',
-                        borderRadius:'10px',
-                        padding:'11px 18px',
-                        fontWeight:'800',
-                        fontSize:'13px',
-                        display:'flex',
-                        alignItems:'center',
-                        justifyContent:'center',
-                        gap:'6px',
-                        cursor:'pointer'
-                      }}>
-                        Support now <span>→</span>
-                      </button>
-                      <button onClick={(e)=>{e.stopPropagation(); if(navigator.share){navigator.share({title:c.title, text:c.description, url: window.location.href})}}}
-                        style={{
-                          background:'#f8fafc',
-                          border:'1px solid #e2e0f0',
-                          borderRadius:'10px',
-                          padding:'11px 16px',
-                          fontWeight:'700',
-                          fontSize:'12px',
-                          whiteSpace:'nowrap',
-                          cursor:'pointer',
-                          flexShrink:0
-                        }}>
-                        Share
-                      </button>
+                      <button style={{flex: 1, background:'#0BA469', color:'white', border:'none', borderRadius:'10px', padding:'11px 18px', fontWeight:'800', fontSize:'13px', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', cursor:'pointer'}}>Support now <span>→</span></button>
+                      <button onClick={(e)=>{e.stopPropagation(); if(navigator.share){navigator.share({title:c.title, text:c.description, url: window.location.href})}}} style={{background:'#f8fafc', border:'1px solid #e2e0f0', borderRadius:'10px', padding:'11px 16px', fontWeight:'700', fontSize:'12px', whiteSpace:'nowrap', cursor:'pointer', flexShrink:0}}>Share</button>
                     </div>
-                    <div style={{fontSize:'9.5px', color:'#94a3b8', fontWeight:'500', textAlign:'right', marginTop:'5px', letterSpacing:'0.1px', paddingRight:'2px'}}>
-                      Share to Spread the Word
-                    </div>
+                    <div style={{fontSize:'9.5px', color:'#94a3b8', fontWeight:'500', textAlign:'right', marginTop:'5px'}}>Share to Spread the Word</div>
                   </div>
-
                 </div>
               </div>
             )

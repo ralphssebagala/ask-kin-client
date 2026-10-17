@@ -40,7 +40,7 @@ export default function DelegateLogin(){
       <form onSubmit={handleLogin} style={{background:'white', borderRadius:'24px', padding:'32px', width:'100%', maxWidth:'380px', border:'1px solid #f0f0f0', boxShadow:'0 20px 40px rgba(0,0,0,0.06)'}}>
         <div style={{textAlign:'center', marginBottom:'24px'}}>
           <p style={{fontSize:'40px'}}>🔐</p>
-          <h1 style={{fontSize:'22px', fontWeight:'800', marginTop:'8px'}}>Delegate Login</h1>
+          <h1 style={{fontSize:'22px', fontWeight:'800', marginTop:'8px'}}>Delegate</h1>
           <p style={{fontSize:'13px', color:'#888', marginTop:'4px'}}>Permanent access • Until owner revokes</p>
         </div>
 
