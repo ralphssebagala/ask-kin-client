@@ -195,7 +195,7 @@ export default function App() {
                   <button onClick={() => { navigate('/privacy-policy'); setIsMenuOpen(false); }} style={{ flex:1, padding:'8px', border:'1px solid #e2e8f0', background:'#f8fafc', fontWeight:600, fontSize:'11px', borderRadius:8, color:'#64748b' }}>Privacy Policy</button>
                 </div>
 
-                <div style={{ textAlign:'center', fontSize:'10px', color:'#94a3b8', marginTop:4 }}>v2.4.1 • Verified • LC1 Verified</div>
+                <div style={{ textAlign:'center', fontSize:'10px', color:'#94a3b8', marginTop:4 }}>v2.4.1 • Verified</div>
               </div>
             </div>
           </div>
