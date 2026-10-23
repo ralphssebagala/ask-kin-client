@@ -15,203 +15,221 @@ import DelegateLogin from './pages/DelegateLogin';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import Terms from './pages/Terms.jsx';
 import ContactSupport from './pages/ContactSupport.jsx';
+import OpeningScreen from './pages/OpeningScreen.jsx';
 
 function CampaignDetailWrapper({ campaigns, onBack, onDonate }) {
   const { id } = useParams();
-  const found = campaigns.find(c => (c._id || c.id) === id) || null;
+  const found = campaigns.find(c => (c._id || c.id || c.ID || c.ID?.toString())?.toString() === id) || null;
   return <CampaignDetail campaign={found} campaignId={id} onBack={onBack} onDonate={onDonate} />;
 }
 function DonateWrapper({ campaigns }) {
   const { id } = useParams();
-  const found = campaigns.find(c => (c._id || c.id) === id) || null;
+  const found = campaigns.find(c => (c._id || c.id || c.ID)?.toString() === id) || null;
   return <DonatePage campaign={found} />;
 }
 function EditCampaignWrapper({ campaigns, onCampaignCreated, onCancel }) {
   const { id } = useParams();
-  const found = campaigns.find(c => (c._id || c.id) === id) || null;
+  const found = campaigns.find(c => (c._id || c.id || c.ID)?.toString() === id) || null;
   return <CreateCampaign existingCampaign={found} editId={id} isEdit={true} onCampaignCreated={onCampaignCreated} onCancel={onCancel} />;
+}
+function normalizeCampaign(c){
+  if (!c) return c;
+  return { ...c, id: c.id || c.ID, _id: c._id || c.id || c.ID, ID: c.ID || c.id, title: c.title || c.TITLE, category: c.category || c.CATEGORY, goal: Number(c.goal || c.GOAL || c.GOAL_AMOUNT || 0), raised: Number(c.raised || c.RAISED || 0), townCity: c.townCity || c.TOWN_CITY, image: c.image || c.IMAGE, status: (c.status || c.STATUS || 'live').toLowerCase(), donorCount: Number(c.donorCount || c.DONOR_COUNT || 0), CREATOR_ID: c.CREATOR_ID || c.creator_id || '', creator_id: c.CREATOR_ID || c.creator_id || '' }
 }
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('register');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [userCampaigns, setUserCampaigns] = useState([]);
+  const [allCampaigns, setAllCampaigns] = useState([]);
+  const [myCampaigns, setMyCampaigns] = useState([]);
   const [userDonations, setUserDonations] = useState([]);
   const [staffInfo, setStaffInfo] = useState({ hasOwnerToken: false, delegate: null });
-  const [scrollY, setScrollY] = useState(0);
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', onScroll, {passive:true});
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-  const isExplore = location.pathname === '/' || location.pathname.includes('/explore');
-  const glowIntensity = Math.min(scrollY / 200, 1);
-  const showGlow = !isExplore;
+  const [showOpening, setShowOpening] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 900 && location.pathname === '/';
+  });
+
+  const API = import.meta.env.VITE_BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://api.ask-kin.com');
 
   useEffect(() => {
-    const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
-    fetch(`${API}/api/campaigns`).then(r=>r.json()).then(d=>setUserCampaigns(Array.isArray(d)?d:d.campaigns||d.data||[])).catch(()=>{});
+    if (location.pathname !== '/' || window.innerWidth >= 900) {
+      setShowOpening(false);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/api/campaigns`).then(r=> r.ok ? r.json() : []).catch(()=>[]),
+      fetch(`${API}/api/campaigns/pending`).then(r=> r.ok ? r.json() : []).catch(()=>[])
+    ]).then(([live, pending])=>{
+      const liveArr = Array.isArray(live) ? live : (live.campaigns || live.data || []);
+      const pendingArr = Array.isArray(pending) ? pending : (pending.campaigns || pending.data || []);
+      const all = [...liveArr, ...pendingArr].map(normalizeCampaign);
+      const dedup = Array.from(new Map(all.map(c=>[c.id, c])).values());
+      setAllCampaigns(dedup);
+    });
     const savedEmail = localStorage.getItem('userEmail');
     const savedName = localStorage.getItem('userName');
     const savedRole = localStorage.getItem('userRole');
-    if (savedEmail && savedName) setCurrentUser({ email: savedEmail, fullName: savedName, role: savedRole });
+    const savedId = localStorage.getItem('userId');
+    const savedPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || '';
+    if (savedEmail && savedName) {
+      setCurrentUser({ id: savedId, email: savedEmail, fullName: savedName, name: savedName, phone: savedPhone, role: savedRole, email: savedEmail });
+    } else {
+      try { const stored = JSON.parse(localStorage.getItem('user') || '{}'); if (stored.email) setCurrentUser(stored); } catch {}
+    }
     const token = localStorage.getItem('token') || localStorage.getItem('ownerToken') || localStorage.getItem('authToken');
     try { const del = JSON.parse(localStorage.getItem('delegate')||'null'); setStaffInfo({ hasOwnerToken: !!token, delegate: del }); } catch { setStaffInfo({ hasOwnerToken: !!token, delegate: null }); }
-  }, [location.pathname, isMenuOpen]);
+  }, [location.pathname, isMenuOpen, API]);
 
-  const active = (p) => location.pathname === p;
-  const handleAuthSuccess = (user) => { setCurrentUser(user); setIsAuthOpen(false); if(user.email) localStorage.setItem('userEmail', user.email); if(user.fullName) localStorage.setItem('userName', user.fullName); if(user.role) localStorage.setItem('userRole', user.role); navigate('/dashboard'); };
-  const handleLogout = () => { localStorage.clear(); setCurrentUser(null); setStaffInfo({ hasOwnerToken: false, delegate: null }); navigate('/'); };
-  const handleDashboardClick = () => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); };
+  useEffect(() => {
+    const uid = currentUser?.id || localStorage.getItem('userId');
+    const email = currentUser?.email || localStorage.getItem('userEmail');
+    if (!uid && !email) { setMyCampaigns([]); return; }
+    const url = uid ? `${API}/api/campaigns?creator_id=${encodeURIComponent(uid)}` : `${API}/api/campaigns?email=${encodeURIComponent(email)}`;
+    fetch(url).then(r=> r.ok ? r.json() : []).then(data=>{
+      const arr = Array.isArray(data) ? data : (data.campaigns || data.data || []);
+      const normalized = arr.map(normalizeCampaign);
+      const filtered = uid ? normalized.filter(c => (c.CREATOR_ID||'').toString() === uid.toString()) : normalized;
+      setMyCampaigns(filtered);
+    }).catch(()=> setMyCampaigns([]));
+  }, [currentUser, API, location.pathname]);
+
+  const handleAuthSuccess = (user) => { 
+    const u = { id: user.id || user.ID, email: user.email || user.EMAIL, fullName: user.fullName || user.name || user.FULL_NAME, name: user.fullName || user.name, phone: user.phone || user.PHONE || '', role: user.role };
+    setCurrentUser(u); setIsAuthOpen(false);
+    if(u.email) localStorage.setItem('userEmail', u.email);
+    if(u.fullName) localStorage.setItem('userName', u.fullName);
+    if(u.phone) localStorage.setItem('userPhone', u.phone);
+    if(u.id) localStorage.setItem('userId', u.id.toString());
+    if(u.role) localStorage.setItem('userRole', u.role);
+  };
+  const handleLogout = () => { localStorage.clear(); setCurrentUser(null); setMyCampaigns([]); navigate('/'); };
+  const handleRequireAuth = (mode='login') => { setAuthMode(mode); setIsAuthOpen(true); };
+  const handleStartFundraiser = () => { if (!currentUser) { handleRequireAuth('register'); return; } navigate('/create-campaign'); };
+
+  const isOpeningView = showOpening && location.pathname === '/';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFBF5', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#fefcf6' }}>
       <style>{`
-        @keyframes greenPulse { 0%,100%{opacity:0.8;transform:scaleX(1)} 50%{opacity:1;transform:scaleX(1.05)} }
-        .ak-header{position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(11,164,108,0.08);transition:all 0.3s;padding-top:env(safe-area-inset-top, 0px);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
-        .ak-header.glow{box-shadow:0 1px 0 rgba(0,0,0,0.05), 0 8px 24px rgba(11,164,108,0.18), 0 0 0 1px rgba(11,164,108,0.08)}
-        .ak-header.no-glow{box-shadow:0 6px 18px rgba(0,0,0,0.06);border-bottom:3px solid #0f4d3a}
-        .ak-header-inner{max-width:1440px;margin:0 auto;padding:0 16px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:0;position:relative}
-        .ak-logo{display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;width:220px}
-        .ak-logo img{width:56px;height:56px;border-radius:12px;object-fit:contain;flex-shrink:0}
-        .ak-logo-text{display:flex;flex-direction:column;line-height:1}
-        .ak-logo-text .name{font-size:22px;font-weight:900;color:#0f4d3a;letter-spacing:-0.5px}
-        .ak-logo-text .tagline{font-size:9px;font-weight:700;color:#0f4d3a;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;margin-top:2px;white-space:nowrap}
-        .ak-center{flex:1;display:none;align-items:center;justify-content:center;gap:0}
-        .ak-center-spacer{flex:1;min-width:40px;max-width:120px}
-        .ak-nav-group{display:flex;align-items:center;gap:12px}
-        .ak-nav-btn{background:none;border:none;cursor:pointer;font-weight:800;font-size:13px;letter-spacing:0.2px;color:#111827;line-height:1.1;text-align:center;white-space:normal;max-width:110px;min-width:70px;padding:6px 8px;border-radius:10px}
-        .ak-nav-btn.active{background:#f0fdf4;color:#0f4d3a;font-weight:900}
-        .ak-right{display:none;align-items:center;gap:12px;flex-shrink:0;width:auto;justify-content:flex-end;min-width:240px}
-        .ak-hamburger{background:none;border:none;font-size:26px;cursor:pointer;font-weight:900;padding:6px}
-        @media(min-width:800px){
-          .ak-header-inner{height:88px;padding:0 16px}
-          .ak-logo{width:220px}
-          .ak-logo img{width:60px;height:60px}
-          .ak-logo-text .name{font-size:20px}
-          .ak-logo-text .tagline{font-size:8px}
-          .ak-center{display:flex !important}
-          .ak-right{display:flex !important}
-          .ak-hamburger{display:none !important}
-          .ak-nav-btn{font-size:11px;max-width:90px;padding:5px 6px}
-          .ak-center-spacer{max-width:20px}
-          .ak-right{gap:8px;min-width:180px}
+        .ak-m-only{display:flex !important}
+        .ak-pc-only{display:none !important}
+        @media(min-width:900px){
+          .ak-m-only{display:none !important}
+          .ak-pc-only{display:block !important}
         }
-        @media(min-width:1000px){
-          .ak-header-inner{padding:0 20px}
-          .ak-logo{width:240px}
-          .ak-logo img{width:64px;height:64px}
-          .ak-logo-text .name{font-size:22px}
-          .ak-logo-text .tagline{font-size:9px}
-          .ak-nav-btn{font-size:12px;max-width:100px}
-          .ak-center-spacer{max-width:60px}
-        }
-        @media(min-width:1100px){
-          .ak-header-inner{padding:0 28px}
-          .ak-logo{width:260px}
-          .ak-logo img{width:68px;height:68px}
-          .ak-logo-text .name{font-size:24px}
-          .ak-logo-text .tagline{font-size:10px}
-          .ak-nav-btn{font-size:13.5px;max-width:120px}
-          .ak-center-spacer{max-width:180px}
-        }
-        @media(max-width:799px){
-          .ak-center{display:none !important}
-          .ak-right{display:none !important}
-          .ak-hamburger{display:block !important}
-        }
-        .ak-main{flex-grow:1;padding-top:72px}
-        .ak-main.no-gap{padding-top:0px}
-        @media(min-width:800px){
-          .ak-main{padding-top:88px}
-          .ak-main.no-gap{padding-top:0px}
-        }
+        .ak-spacer{height:64px}
+        @media(min-width:900px){.ak-spacer{height:118px !important}}
+        .ak-main.no-gap{margin-top:-1px}
       `}</style>
 
-      <header className={`ak-header ${showGlow ? 'glow' : 'no-glow'}`}>
-        {showGlow && (
-          <div style={{ position:'absolute', bottom:-48, left:0, right:0, height:64, pointerEvents:'none', background:`linear-gradient(180deg, rgba(11,164,108,${0.15 + glowIntensity*0.35}) 0%, rgba(11,164,108,${(0.15 + glowIntensity*0.35)*0.6}) 25%, transparent 100%)`, filter:`blur(${4 + glowIntensity*6}px)`, animation:'greenPulse 3s ease-in-out infinite'}}/>
-        )}
-        <div className="ak-header-inner">
-          <div className="ak-logo" onClick={() => navigate('/')}>
-            <img src="/logo.png" alt="Ask Kin logo" />
-            <div className="ak-logo-text"><span className="name">Ask Kin</span><span className="tagline">Rekindling the Gift of Giving</span></div>
-          </div>
-          <div className="ak-center">
-            <div className="ak-center-spacer" />
-            <div className="ak-nav-group">
-              <button onClick={() => navigate('/')} className={`ak-nav-btn ${active('/')?'active':''}`}>Explore Our<br/>Fundraisers</button>
-              <button onClick={() => navigate('/assistant')} className={`ak-nav-btn ${active('/assistant')?'active':''}`}>Ask Kin<br/>Assistant</button>
-              <button onClick={handleDashboardClick} className={`ak-nav-btn ${active('/dashboard')?'active':''}`}>Dashboard</button>
-              <button onClick={() => navigate('/faq')} className={`ak-nav-btn ${active('/faq')?'active':''}`}>FAQ</button>
+      {/* MOBILE HEADER - hidden when opening screen is showing */}
+      {!isOpeningView && (
+        <div className="ak-m-only" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#fff', borderBottom: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0, flexShrink: 0 }} onClick={() => { setShowOpening(false); navigate('/'); }}>
+            <div style={{ width: 48, height: 48, minWidth: 48, borderRadius: 10, background: '#0a1931', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <img src="/logo.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e)=>e.currentTarget.src='/vite.svg'} />
             </div>
-            <div className="ak-center-spacer" />
+            <div style={{ lineHeight: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#0f3d2e', fontFamily: 'ui-serif, Georgia, serif', whiteSpace: 'nowrap' }}>Ask Kin</div>
+              <div style={{ fontSize: 7, fontWeight: 800, color: '#374151', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap', transform: 'scaleX(0.92)', transformOrigin: 'left', marginTop: 3 }}>REKINDLING THE GIFT OF GIVING</div>
+            </div>
           </div>
-          <div className="ak-right">
-            {!currentUser && <button onClick={() => setIsAuthOpen(true)} style={{ background:'none', border:'none', cursor:'pointer', fontWeight:800, fontSize:'14px' }}>Sign In</button>}
-            {currentUser && <button onClick={handleLogout} style={{ background:'none', border:'none', cursor:'pointer', fontWeight:800, fontSize:'12px' }}>Logout ({currentUser.fullName?.split(' ')[0]})</button>}
-            <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); }} style={{ background:'#0f4d3a', color:'white', border:'none', borderRadius:'999px', padding:'12px 20px', fontWeight:900, fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}>Start a Fundraiser</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+            <button onClick={handleStartFundraiser} style={{ background: '#0f4d3a', color: '#fff', border: 'none', borderRadius: 999, padding: '6px 10px', fontSize: 11, fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>Start a Fundraiser</button>
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', width: 26, height: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>
+              <span style={{ height: 3, background: '#000', borderRadius: 2, display: 'block' }}></span>
+              <span style={{ height: 3, background: '#000', borderRadius: 2, display: 'block' }}></span>
+              <span style={{ height: 3, background: '#000', borderRadius: 2, display: 'block' }}></span>
+            </button>
           </div>
-          <button className="ak-hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>☰</button>
         </div>
+      )}
 
-        {isMenuOpen && (
-          <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.4)', paddingTop:'env(safe-area-inset-top, 0px)' }} onClick={() => setIsMenuOpen(false)}>
-            <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'85%', maxWidth:'380px', background:'rgba(255,255,255,0.98)', backdropFilter:'blur(16px)', padding:'20px', paddingTop:'calc(20px + env(safe-area-inset-top, 0px))', overflowY:'auto', borderLeft:'1px solid rgba(11,164,108,0.1)', height:'100dvh' }} onClick={e=>e.stopPropagation()}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-                <span style={{fontWeight:900, fontSize:'16px', display:'flex', alignItems:'center', gap:8}}><span style={{width:8, height:8, background:'#0BA46C', borderRadius:'50%', display:'inline-block', animation:'greenPulse 2s infinite'}}/>Menu</span>
-                <button onClick={() => setIsMenuOpen(false)} style={{background:'#f1f5f9', border:'none', width:32, height:32, borderRadius:16, fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>✕</button>
-              </div>
-
-              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>🏠 Explore Our Fundraisers</button>
-                <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>💬 Ask Kin Assistant</button>
-                <button onClick={() => { if (currentUser) navigate('/dashboard'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>📊 Dashboard</button>
-                <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#f8fafc', fontWeight:700, fontSize:'13px', borderRadius:8 }}>❓ FAQ</button>
-                <button onClick={() => { navigate('/contact-support'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', padding:'10px 12px', border:'none', background:'#fef2f2', fontWeight:700, fontSize:'13px', borderRadius:8, color:'#991b1b', borderLeft:'3px solid #dc2626' }}>📞 Contact Support</button>
-              </div>
-
-              <div style={{ marginTop:'auto', borderTop:'1px solid #e2e8f0', paddingTop:12, display:'flex', flexDirection:'column', gap:8, paddingBottom:'calc(70px + env(safe-area-inset-bottom, 0px))' }}>
-                {!currentUser && <button onClick={() => { setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ textAlign:'left', background:'none', border:'none', fontWeight:800, padding:'6px 12px', fontSize:'13px' }}>👤 Sign In (User)</button>}
-                {currentUser && <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ textAlign:'left', background:'none', border:'none', fontWeight:800, padding:'6px 12px', fontSize:'13px' }}>🚪 Logout ({currentUser.fullName?.split(' ')[0]})</button>}
-                <button onClick={() => { if (currentUser) navigate('/create-campaign'); else setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width:'100%', background:'#0f4d3a', color:'white', border:'none', borderRadius:10, padding:'12px', fontWeight:900, fontSize:'13px', boxShadow:'0 4px 12px rgba(15,77,58,0.25)' }}>Start a Fundraiser</button>
-
-                <div style={{ height:1, background:'linear-gradient(to right, transparent, #e2e8f0, transparent)', margin:'4px 0' }}/>
-
-                {staffInfo.hasOwnerToken && (
-                  <button onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', textAlign:'left', padding:'8px 12px', border:'1px solid #e2e8f0', background:'white', fontWeight:700, fontSize:'12px', borderRadius:8, color:'#334155' }}>🛡️ Admin Dashboard</button>
-                )}
-                {staffInfo.delegate ? (
-                  <button onClick={() => { navigate('/delegate'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', textAlign:'left', padding:'8px 12px', border:'1px solid #e2e8f0', background:'white', fontWeight:700, fontSize:'12px', borderRadius:8, color:'#334155' }}>🤝 Delegate Dashboard</button>
-                ) : (
-                  <button onClick={() => { navigate('/delegate-login'); setIsMenuOpen(false); }} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', textAlign:'left', padding:'8px 12px', border:'1px solid #e2e8f0', background:'white', fontWeight:700, fontSize:'12px', borderRadius:8, color:'#334155' }}>🤝 Delegate Login</button>
-                )}
-
-                <div style={{ display:'flex', gap:6, marginTop:2 }}>
-                  <button onClick={() => { navigate('/terms'); setIsMenuOpen(false); }} style={{ flex:1, padding:'8px', border:'1px solid #e2e8f0', background:'#f8fafc', fontWeight:600, fontSize:'11px', borderRadius:8, color:'#64748b' }}>T&Cs</button>
-                  <button onClick={() => { navigate('/privacy-policy'); setIsMenuOpen(false); }} style={{ flex:1, padding:'8px', border:'1px solid #e2e8f0', background:'#f8fafc', fontWeight:600, fontSize:'11px', borderRadius:8, color:'#64748b' }}>Privacy Policy</button>
+      {/* PC - floating card - hidden when opening (PC never shows opening anyway) */}
+      {!isOpeningView && (
+        <div className="ak-pc-only" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, padding: '12px 20px 0 20px' }}>
+          <div style={{ background: '#fff', borderRadius: 20, maxWidth: 1440, margin: '0 auto', padding: '12px 24px 10px 24px', boxShadow: '0 12px 32px rgba(0,0,0,0.10)', border: '1px solid rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: '#0a1931', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <img src="/logo.png" alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e)=>e.currentTarget.src='/vite.svg'} />
                 </div>
-
-                <div style={{ textAlign:'center', fontSize:'10px', color:'#94a3b8', marginTop:4 }}>v2.4.1 • Verified</div>
+                <div><div style={{ fontSize: 36, fontWeight: 900, color: '#0f3d2e', fontFamily: 'ui-serif, Georgia, serif' }}>Ask Kin</div><div style={{ fontSize: 11, color: '#5f7168', letterSpacing: '0.14em', textTransform: 'uppercase' }}>REKINDLING THE GIFT OF GIVING</div></div>
+              </div>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                {!currentUser ? <button onClick={() => handleRequireAuth('login')} style={{ background: 'none', border: 'none', fontWeight: 800, fontSize: 14, color: '#0f3d2e', cursor: 'pointer' }}>Sign In</button> : <button onClick={handleLogout} style={{ background: 'none', border: 'none', fontWeight: 800, fontSize: 14, color: '#0f3d2e', cursor: 'pointer' }}>Logout</button>}
+                <button onClick={handleStartFundraiser} style={{ background: '#0f4d3a', color: '#fff', border: 'none', borderRadius: 999, padding: '10px 18px', fontWeight: 900, fontSize: 13, cursor: 'pointer' }}>Start a Fundraiser</button>
               </div>
             </div>
+            <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
+              <button onClick={() => { setShowOpening(false); navigate('/'); }} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', color: location.pathname==='/' ? '#0f3d2e' : '#555' }}>Explore Our Fundraisers</button>
+              <button onClick={() => navigate('/assistant')} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', color: location.pathname==='/assistant' ? '#0f3d2e' : '#555' }}>Ask Kin Assistant</button>
+              <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', color: location.pathname==='/dashboard' ? '#0f3d2e' : '#555' }}>Dashboard</button>
+              <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', color: location.pathname==='/faq' ? '#0f3d2e' : '#555' }}>FAQ</button>
+            </div>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
-      <main className={`ak-main ${isExplore ? 'no-gap' : ''}`}>
+      {isMenuOpen && (
+        <>
+          <div onClick={() => setIsMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 80 }} />
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 300, maxWidth: '82vw', background: '#fff', zIndex: 81, borderRadius: '20px 0 0 20px', boxShadow: '-10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #eee', alignItems: 'center' }}>
+              <span style={{ fontWeight: 900, fontSize: 18 }}>Menu</span>
+              <button onClick={() => setIsMenuOpen(false)} style={{ border: 'none', background: '#f3f4f6', width: 28, height: 28, borderRadius: 14, cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 0 16px 0' }}>
+              <button onClick={() => { setShowOpening(false); navigate('/'); setIsMenuOpen(false); window.scrollTo(0,0); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', borderLeft: '5px solid #0f4d3a', background: '#ecfdf5', textAlign: 'left', cursor: 'pointer', fontWeight: 700, fontSize: 14, color: '#0f4d3a' }}>🏠 Home</button>
+              <button onClick={() => { setShowOpening(false); navigate('/'); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>🔍 Explore Our Fundraisers</button>
+              <button onClick={() => { navigate('/assistant'); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>💬 Ask Kin Assistant</button>
+              <button onClick={() => { navigate('/dashboard'); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>📊 Dashboard</button>
+              <button onClick={() => { navigate('/faq'); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>❓ FAQ</button>
+              <button onClick={() => { navigate('/contact-support'); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '11px 16px', border: 'none', borderLeft: '5px solid #dc2626', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14, color: '#991b1b', fontWeight: 600 }}>🎧 Contact Support</button>
+              <div style={{ height: 1, background: '#eee', margin: '12px 16px' }} />
+              <button onClick={() => { setAuthMode('login'); setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '9px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>👤 Sign In (User)</button>
+              <button onClick={() => { setAuthMode('register'); setIsAuthOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', display: 'flex', gap: 12, padding: '9px 16px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontSize: 14 }}>📝 Register</button>
+              <div style={{ padding: '12px 16px' }}>
+                <button onClick={() => { setIsMenuOpen(false); handleStartFundraiser(); }} style={{ width: '100%', background: '#15803d', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>Start a Fundraiser</button>
+              </div>
+              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#a8a29e', letterSpacing: '0.05em', marginBottom: 4 }}>STAFF ACCESS</div>
+                <button onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'white', border: '1px solid #e7e5e4', fontWeight: 700, padding: '10px 12px', fontSize: 13, borderRadius: 8, cursor: 'pointer' }}>🛡️ Admin Dashboard</button>
+                <button onClick={() => { navigate('/delegate'); setIsMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: '#ecfdf5', border: '1px solid #a7f3d0', fontWeight: 700, padding: '10px 12px', fontSize: 13, borderRadius: 8, color: '#065f46', cursor: 'pointer' }}>📋 Delegate Dashboard</button>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: '#94a3b8', padding: '12px', borderTop: '1px solid #f1f5f9' }}>v2.4.1 • Verified • ask-kin.com</div>
+          </div>
+        </>
+      )}
+
+      {!isOpeningView && <div className="ak-spacer" />}
+
+      <main className={isOpeningView ? '' : 'ak-main no-gap'}>
         <Routes>
-          <Route path="/" element={<HomeFeed onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />} />
-          <Route path="/campaign/:id" element={<CampaignDetailWrapper campaigns={userCampaigns} onBack={() => navigate('/')} onDonate={(c) => navigate(`/donate/${c._id || c.id}`)} />} />
-          <Route path="/donate/:id" element={<DonateWrapper campaigns={userCampaigns} />} />
+          <Route path="/" element={
+            isOpeningView ? (
+              <OpeningScreen 
+                onMenuOpen={() => setIsMenuOpen(true)} 
+                onStartFundraiser={() => { setShowOpening(false); handleStartFundraiser(); }} 
+              />
+            ) : (
+              <HomeFeed allCampaigns={allCampaigns} onSelectCampaign={(c) => navigate(`/campaign/${c._id || c.id}`)} />
+            )
+          } />
+          <Route path="/campaign/:id" element={<CampaignDetailWrapper campaigns={allCampaigns} onBack={() => navigate('/')} onDonate={(c) => navigate(`/donate/${c._id || c.id}`)} />} />
+          <Route path="/donate/:id" element={<DonateWrapper campaigns={allCampaigns} />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
-          <Route path="/dashboard" element={<Dashboard user={currentUser} userCampaigns={userCampaigns} userDonations={userDonations} />} />
+          <Route path="/dashboard" element={<Dashboard user={currentUser} userCampaigns={myCampaigns} allCampaigns={allCampaigns} userDonations={userDonations} onRequireAuth={handleRequireAuth} />} />
           <Route path="/assistant" element={<AskKinAssistant />} />
-          <Route path="/create-campaign" element={<CreateCampaign onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
-          <Route path="/edit-campaign/:id" element={<EditCampaignWrapper campaigns={userCampaigns} onCampaignCreated={(nc) => setUserCampaigns(p => [nc,...p])} onCancel={() => navigate('/dashboard')} />} />
+          <Route path="/create-campaign" element={<CreateCampaign onCampaignCreated={(nc) => { const n = normalizeCampaign(nc); setAllCampaigns(p => [n,...p]); setMyCampaigns(p => [n,...p]); }} onCancel={() => navigate('/dashboard')} />} />
+          <Route path="/edit-campaign/:id" element={<EditCampaignWrapper campaigns={allCampaigns} onCampaignCreated={(nc) => { const n = normalizeCampaign(nc); setAllCampaigns(p => [n,...p]); setMyCampaigns(p => [n,...p]); }} onCancel={() => navigate('/dashboard')} />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
@@ -221,11 +239,12 @@ export default function App() {
           <Route path="/delegate" element={<DelegateDashboard />} />
         </Routes>
       </main>
-      <footer style={{ padding: '24px', textAlign: 'center', borderTop:'1px solid #f1f5f9', marginTop:20 }}>
-        <div>© {new Date().getFullYear()} Ask Kin - ask-kin.com</div>
-      </footer>
-      {isAuthOpen && <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={handleAuthSuccess} />}
+      {!isOpeningView && (
+        <footer style={{ padding: '24px', textAlign: 'center', borderTop:'1px solid #f1f5f9', marginTop:20 }}>
+          <div>© {new Date().getFullYear()} Ask Kin - ask-kin.com</div>
+        </footer>
+      )}
+      {isAuthOpen && <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={handleAuthSuccess} initialMode={authMode} />}
     </div>
   );
 }
-
