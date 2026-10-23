@@ -1,66 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const API = import.meta.env.VITE_BACKEND_URL || 'https://api.ask-kin.com';
 
-const PROVIDERS = ["MTN","Airtel","M-Pesa (Safaricom / Vodacom)","Orange Money","Tigo Pesa","Wave","Other"];
-
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [isLogin, setIsLogin] = useState(false);
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode='register' }) {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [loading, setLoading] = useState(false);
-  const [idFile, setIdFile] = useState(null);
-  const [selfieFile, setSelfieFile] = useState(null);
   const [form, setForm] = useState({
-    fullName: '', email: '', password: '',
-    mobileMoneyNumber: '', mobileMoneyName: '',
-    provider: 'MTN', providerOther: '',
-    idType: 'National ID', idNumber: '',
-    nameMatches: false,
+    fullName: '',
+    phone: '',
+    email: '',
+    city: '',
+    country: 'Uganda',
+    password: '',
+    usernameType: 'email',
     agreed: false,
   });
 
+  // SURGICAL: sync Sign In vs Register buttons
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === 'login');
+    }
+  }, [initialMode, isOpen]);
+
   if (!isOpen) return null;
 
-  const inp = { width:'100%', padding:'10px 12px', borderRadius:'8px', border:'1px solid #d1d5db', fontSize:'13px', boxSizing:'border-box' };
-  const card = { background:'#f9fafb', border:'1px solid #eef2f7', borderRadius:'12px', padding:'12px', marginBottom:'12px' };
-  const row = { display:'flex', gap:'8px', marginBottom:'10px' };
+  // FIXED: PC readable — larger fonts
+  const inp = { width:'100%', padding:'14px 16px', borderRadius:'12px', border:'1px solid #d6d3d1', fontSize:'15px', boxSizing:'border-box', outline:'none', background:'white' };
+  const label = { fontSize:'13px', fontWeight:'700', color:'#44403c', marginBottom:'6px', display:'block' };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isLogin) {
-      if (!form.nameMatches) return alert('Please confirm your full name matches Mobile Money name');
-      if (!form.agreed) return alert('Please agree to Terms & Privacy Policy to continue');
-      if (!form.mobileMoneyNumber) return alert('Enter Mobile Money Number');
-      if (!idFile || !selfieFile) return alert('Please upload ID Document and Selfie holding ID');
-    }
+    if (!isLogin && !form.agreed) return alert('Please agree to Terms & Privacy Policy');
+    if (!isLogin && !form.fullName.trim()) return alert('Full name required');
+    if (!form.email && !form.phone) return alert('Enter email or phone');
+    if (!form.password) return alert('Password required');
     
     setLoading(true);
     try {
-      const finalProvider = form.provider === 'Other' ? form.providerOther : form.provider;
-      const fd = new FormData();
-      fd.append('fullName', form.fullName);
-      fd.append('email', form.email);
-      fd.append('password', form.password);
-      fd.append('provider', finalProvider);
-      fd.append('mobileMoneyNumber', form.mobileMoneyNumber);
-      fd.append('mobileMoneyName', form.mobileMoneyName);
-      fd.append('idType', form.idType);
-      fd.append('idNumber', form.idNumber);
-      if (idFile) fd.append('idDocument', idFile);
-      if (selfieFile) fd.append('selfie', selfieFile);
-
-      // FIXED: Use API from env, not hardcoded localhost
-      const url = isLogin ? `${API}/api/auth/login` : `${API}/api/auth/register`;
-      const isFormData = !isLogin;
-      const res = await fetch(url, {
-        method:'POST',
-        headers: isFormData ? {} : {'Content-Type':'application/json'},
-        body: isFormData ? fd : JSON.stringify({ email: form.email, password: form.password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || 'Failed');
-      
-      alert(isLogin ? 'Login success!' : 'Account created! Verification pending. You will be notified once approved.');
-      onAuthSuccess && onAuthSuccess(data.user || { fullName: form.fullName, email: form.email, role: data.user?.role });
+      if (isLogin) {
+        const loginId = form.usernameType === 'phone' ? form.phone : form.email;
+        const res = await fetch(`${API}/api/auth/login`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: loginId, phone: loginId, password: form.password, username: loginId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || data.error || 'Login failed');
+        const user = data.user || { fullName: data.fullName || form.fullName, email: data.email || form.email, phone: form.phone };
+        localStorage.setItem('userEmail', user.email || form.email || '');
+        localStorage.setItem('userName', user.fullName || user.name || form.fullName || '');
+        localStorage.setItem('userRole', user.role || 'user');
+        if (data.token) localStorage.setItem('token', data.token);
+        onAuthSuccess && onAuthSuccess(user);
+      } else {
+        const payload = {
+          fullName: form.fullName,
+          name: form.fullName,
+          phone: form.phone,
+          email: form.email,
+          city: form.city,
+          country: form.country,
+          location: `${form.city}, ${form.country}`,
+          password: form.password,
+          username: form.usernameType === 'phone' ? form.phone : form.email,
+          usernameType: form.usernameType,
+        };
+        const res = await fetch(`${API}/api/auth/register`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || data.error || 'Registration failed');
+        const user = data.user || { fullName: form.fullName, email: form.email, phone: form.phone };
+        localStorage.setItem('userEmail', user.email || form.email || '');
+        localStorage.setItem('userName', user.fullName || form.fullName || '');
+        localStorage.setItem('userRole', user.role || 'user');
+        localStorage.setItem('userPhone', form.phone || '');
+        if (data.token) localStorage.setItem('token', data.token);
+        onAuthSuccess && onAuthSuccess(user);
+      }
     } catch (err) {
       alert(err.message);
     } finally {
@@ -69,92 +89,78 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   };
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:60, display:'flex', alignItems:'center', justifyContent:'center', padding:'12px' }}>
-      <div style={{ background:'white', width:'100%', maxWidth:'440px', borderRadius:'16px', padding:'18px', maxHeight:'92vh', overflowY:'auto' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
-          <b style={{ fontSize:'16px' }}>{isLogin ? 'Welcome Back' : 'Create Account'}</b>
-          <button onClick={onClose} style={{ border:'none', background:'#f1f5f9', width:'28px', height:'28px', borderRadius:'50%', cursor:'pointer' }}>×</button>
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:60, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}>
+      <div style={{ background:'white', width:'100%', maxWidth:'460px', borderRadius:'20px', padding:'24px', maxHeight:'92vh', overflowY:'auto', boxShadow:'0 20px 40px rgba(0,0,0,0.15)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'18px' }}>
+          <div>
+            <b style={{ fontSize:'19px', fontWeight:'900', color:'#1c1917' }}>{isLogin ? 'Welcome Back' : 'Create Account'}</b>
+            <div style={{fontSize:'13px', color:'#78716c', marginTop:'4px'}}>{isLogin ? 'Sign in to continue to your dashboard' : 'Get started with Ask Kin'}</div>
+          </div>
+          <button onClick={onClose} style={{ border:'none', background:'#f5f5f4', width:'36px', height:'36px', borderRadius:'50%', cursor:'pointer', fontSize:'20px' }}>×</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-          {!isLogin && <input style={inp} value={form.fullName} onChange={e=>setForm({...form, fullName:e.target.value})} placeholder="Full Name (must match ID & Mobile Money)" required />}
-          <input style={inp} type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} placeholder="Email Address" required />
-          <input style={inp} type="password" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} placeholder="Password" required />
-
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
           {!isLogin && (
             <>
-              <div style={card}>
-                <div style={{ fontWeight:'bold', marginBottom:'10px', textAlign:'center', fontSize:'14px' }}>Payout Information</div>
-                <div style={{ fontSize:'11px', color:'#065f46', background:'#ecfdf5', padding:'6px 8px', borderRadius:'6px', marginBottom:'8px', textAlign:'center' }}>
-                  Mobile Money only for quick start. Bank option available in Create Campaign.
-                </div>
-                <div style={row}>
-                  <select style={{...inp, flex:'0 0 140px'}} value={form.provider} onChange={e=>setForm({...form, provider:e.target.value})}>
-                    {PROVIDERS.map(p=><option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <input style={{...inp, flex:'1'}} value={form.mobileMoneyNumber} onChange={e=>setForm({...form, mobileMoneyNumber:e.target.value})} placeholder="Mobile Money Number" required />
-                </div>
-                {form.provider === 'Other' && <input style={{...inp, marginBottom:'10px'}} value={form.providerOther} onChange={e=>setForm({...form, providerOther:e.target.value})} placeholder="Provider e.g. Vodafone Cash, Moov" required />}
-                <input style={inp} value={form.mobileMoneyName} onChange={e=>setForm({...form, mobileMoneyName:e.target.value})} placeholder="Mobile Money Registered Name" required />
-                <div style={{ fontSize:'10px', color:'#6b7280', marginTop:'6px' }}>M-Pesa = KE/TZ/DRC/MZ • Orange Money = SN/ML/CM/BW • Wave = CI/SN • Tigo = TZ/GH</div>
+              <div><span style={label}>Full Name *</span><input style={inp} value={form.fullName} onChange={e=>setForm({...form, fullName:e.target.value})} placeholder="e.g., John Okello" required /></div>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                <div><span style={label}>Phone</span><input style={inp} type="tel" value={form.phone} onChange={e=>setForm({...form, phone:e.target.value})} placeholder="0772 123456" /></div>
+                <div><span style={label}>Email</span><input style={inp} type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} placeholder="you@example.com" /></div>
               </div>
-
-              <div style={card}>
-                <div style={{ fontWeight:'bold', marginBottom:'10px', textAlign:'center', fontSize:'14px' }}>KYC Verification</div>
-                <div style={row}>
-                  <select style={{...inp, flex:'0 0 120px'}} value={form.idType} onChange={e=>setForm({...form, idType:e.target.value})}>
-                    <option>National ID</option><option>Passport</option><option>Driving Permit</option>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                <div><span style={label}>City / Town</span><input style={inp} value={form.city} onChange={e=>setForm({...form, city:e.target.value})} placeholder="Gulu, Kampala" /></div>
+                <div><span style={label}>Country</span>
+                  <select style={inp} value={form.country} onChange={e=>setForm({...form, country:e.target.value})}>
+                    <option>Uganda</option><option>Kenya</option><option>Tanzania</option><option>Rwanda</option><option>Burundi</option><option>DR Congo</option><option>South Sudan</option><option>Other</option>
                   </select>
-                  <input style={{...inp, flex:'1'}} value={form.idNumber} onChange={e=>setForm({...form, idNumber:e.target.value})} placeholder="ID Number" required />
-                </div>
-                <div style={{ display:'flex', gap:'8px', fontSize:'12px' }}>
-                  <label style={{ flex:1, border:'1px dashed #065f46', borderRadius:'8px', padding:'10px', textAlign:'center', cursor:'pointer', background: idFile ? '#ecfdf5' : 'white' }}>
-                    📁 {idFile ? idFile.name.slice(0,20) : 'Upload ID Document'}
-                    <input type="file" accept="image/*" hidden onChange={e=>setIdFile(e.target.files[0])} />
-                    <div style={{ fontSize:'10px', color: idFile ? '#065f46' : '#6b7280', marginTop:'4px' }}>{idFile ? '✓ Selected' : 'Front side, clear'}</div>
-                  </label>
-                  <label style={{ flex:1, border:'1px dashed #065f46', borderRadius:'8px', padding:'10px', textAlign:'center', cursor:'pointer', background: selfieFile ? '#ecfdf5' : 'white' }}>
-                    📁 {selfieFile ? selfieFile.name.slice(0,20) : 'Upload Selfie holding ID'}
-                    <input type="file" accept="image/*" hidden onChange={e=>setSelfieFile(e.target.files[0])} />
-                    <div style={{ fontSize:'10px', color: selfieFile ? '#065f46' : '#6b7280', marginTop:'4px' }}>{selfieFile ? '✓ Selected' : 'Face + ID visible'}</div>
-                  </label>
                 </div>
               </div>
-
-              <label style={{ display:'flex', gap:'8px', fontSize:'12px', marginBottom:'4px', alignItems:'flex-start' }}>
-                <input type="checkbox" checked={form.nameMatches} onChange={e=>setForm({...form, nameMatches:e.target.checked})} required style={{marginTop:'2px'}} />
-                <span>My full name matches my <b>Mobile Money name</b> and ID (required for payout)</span>
-              </label>
-
-              <label style={{ display:'flex', gap:'8px', fontSize:'11px', marginBottom:'10px', alignItems:'flex-start', background:'#f0fdf4', border:'1px solid #bbf7d0', padding:'8px', borderRadius:'8px' }}>
-                <input type="checkbox" checked={form.agreed} onChange={e=>setForm({...form, agreed:e.target.checked})} required style={{marginTop:'2px', accentColor:'#065f46'}} />
-                <span style={{ lineHeight:'15px' }}>
-                  I am 18+ and agree to Ask Kin's{' '}
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color:'#065f46', fontWeight:'bold', textDecoration:'underline' }}>Terms & Conditions</a>
-                  {' '}and{' '}
-                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color:'#065f46', fontWeight:'bold', textDecoration:'underline' }}>Privacy Policy</a>
-                  . I consent to ID verification and escrow processing by licensed aggregator.
-                </span>
-              </label>
+              <div style={{background:'#fafaf9', border:'1px solid #e7e5e4', borderRadius:'12px', padding:'12px'}}>
+                <span style={label}>Login method</span>
+                <div style={{display:'flex', gap:'10px', marginTop:'8px'}}>
+                  <label style={{display:'flex', alignItems:'center', gap:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', background: form.usernameType==='email'?'#ecfdf5':'white', border:`1px solid ${form.usernameType==='email'?'#a7f3d0':'#e7e5e4'}`, padding:'10px 14px', borderRadius:'10px', flex:1}}><input type="radio" name="utype" checked={form.usernameType==='email'} onChange={()=>setForm({...form, usernameType:'email'})} /> Email</label>
+                  <label style={{display:'flex', alignItems:'center', gap:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', background: form.usernameType==='phone'?'#ecfdf5':'white', border:`1px solid ${form.usernameType==='phone'?'#a7f3d0':'#e7e5e4'}`, padding:'10px 14px', borderRadius:'10px', flex:1}}><input type="radio" name="utype" checked={form.usernameType==='phone'} onChange={()=>setForm({...form, usernameType:'phone'})} /> Phone</label>
+                </div>
+              </div>
             </>
           )}
 
-          <button type="submit" disabled={loading || (!isLogin && (!form.nameMatches || !form.agreed))} style={{ width:'100%', background: (!isLogin && (!form.nameMatches || !form.agreed)) ? '#9ca3af' : '#065f46', color:'white', padding:'14px', borderRadius:'10px', border:'none', fontWeight:'bold', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
-            {loading ? 'Please wait...' : isLogin ? 'Login' : 'Create Account & Verify'}
+          {isLogin && (
+            <>
+              <div style={{background:'#fafaf9', border:'1px solid #e7e5e4', borderRadius:'12px', padding:'12px'}}>
+                <span style={label}>Login with</span>
+                <div style={{display:'flex', gap:'10px', marginTop:'8px'}}>
+                  <label style={{display:'flex', alignItems:'center', gap:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', background: form.usernameType==='email'?'#ecfdf5':'white', border:`1px solid ${form.usernameType==='email'?'#a7f3d0':'#e7e5e4'}`, padding:'10px 14px', borderRadius:'10px', flex:1}}><input type="radio" checked={form.usernameType==='email'} onChange={()=>setForm({...form, usernameType:'email'})} /> Email</label>
+                  <label style={{display:'flex', alignItems:'center', gap:'6px', fontSize:'14px', fontWeight:'600', cursor:'pointer', background: form.usernameType==='phone'?'#ecfdf5':'white', border:`1px solid ${form.usernameType==='phone'?'#a7f3d0':'#e7e5e4'}`, padding:'10px 14px', borderRadius:'10px', flex:1}}><input type="radio" checked={form.usernameType==='phone'} onChange={()=>setForm({...form, usernameType:'phone'})} /> Phone</label>
+                </div>
+              </div>
+              {form.usernameType==='email' ? <div><span style={label}>Email</span><input style={inp} type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} placeholder="you@example.com" required /></div> : <div><span style={label}>Phone</span><input style={inp} type="tel" value={form.phone} onChange={e=>setForm({...form, phone:e.target.value})} placeholder="0772..." required /></div>}
+            </>
+          )}
+
+          <div><span style={label}>Password *</span><input style={inp} type="password" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} placeholder={isLogin?'Your password':'Create password (min 6 chars)'} required /></div>
+
+          {!isLogin && (
+            <label style={{ display:'flex', gap:'10px', fontSize:'13px', background:'#f5f5f4', border:'1px solid #e7e5e4', padding:'12px', borderRadius:'10px', alignItems:'flex-start', lineHeight:'1.4' }}>
+              <input type="checkbox" checked={form.agreed} onChange={e=>setForm({...form, agreed:e.target.checked})} required style={{marginTop:'3px'}} />
+              <span>I agree to <a href="/terms" target="_blank" style={{color:'#0f4d3a', fontWeight:'700', textDecoration:'underline'}}>Terms</a> & <a href="/privacy-policy" target="_blank" style={{color:'#0f4d3a', fontWeight:'700', textDecoration:'underline'}}>Privacy Policy</a>. Data retained per policy for verification & payouts only.</span>
+            </label>
+          )}
+
+          <button type="submit" disabled={loading} style={{ width:'100%', background: loading ? '#a8a29e' : '#0f4d3a', color:'white', padding:'16px', borderRadius:'12px', border:'none', fontWeight:'900', cursor: loading ? 'wait' : 'pointer', fontSize:'15px', marginTop:'4px' }}>
+            {loading ? 'Please wait...' : isLogin ? 'Sign In → Dashboard' : 'Create Account → Dashboard'}
           </button>
 
-          <div style={{ textAlign:'center', marginTop:'10px', fontSize:'13px' }}>
+          <div style={{ textAlign:'center', fontSize:'14px', color:'#57534e', marginTop:'4px' }}>
             {isLogin ? 'No account?' : 'Already have account?'}
-            <button type="button" onClick={()=>setIsLogin(!isLogin)} style={{ border:'1px solid #065f46', padding:'4px 10px', borderRadius:'6px', marginLeft:'6px', cursor:'pointer', background:'white' }}>
-              {isLogin ? 'Sign Up' : 'Login'}
+            <button type="button" onClick={()=>setIsLogin(!isLogin)} style={{ border:'1px solid #0f4d3a', padding:'7px 16px', borderRadius:'999px', marginLeft:'10px', cursor:'pointer', background:'white', fontWeight:'700', color:'#0f4d3a' }}>
+              {isLogin ? 'Create Account' : 'Sign In'}
             </button>
           </div>
 
-          {!isLogin && (
-            <div style={{ textAlign:'center', marginTop:'8px', fontSize:'10px', color:'#9ca3af' }}>
-              By signing up, you agree to our <a href="/terms" target="_blank" style={{textDecoration:'underline'}}>T&C</a> and <a href="/privacy-policy" target="_blank" style={{textDecoration:'underline'}}>Privacy Policy</a>. Monday 11AM payouts, 10% fee, UGX 50k min.
-            </div>
-          )}
+          <div style={{textAlign:'center', fontSize:'12px', color:'#a8a29e', marginTop:'2px', lineHeight:'1.4'}}>
+            Data retained securely per our Privacy Policy — used only for payouts & verification.
+          </div>
         </form>
       </div>
     </div>
